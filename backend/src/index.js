@@ -1,0 +1,69 @@
+// GET /suggest?title=... -> three emoji suggestions for a Notion page title, ranked by Jev.
+import catalog from "./catalog.json";
+
+const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
+const INSTRUCTIONS = "Which emoji is the best icon to represent the topic of a document titled `title`?";
+// The API caps a Choice at 255 options, so the catalog is split across several Choice
+// questions in one request. Each carries a "none" option so a chunk with no good match
+// parks its probability there, which keeps probabilities roughly comparable across chunks.
+const CHUNK = 250;
+const NONE = "none_of_these";
+const MAX_TITLE_LENGTH = 200;
+const SUGGESTIONS = 3;
+
+function json(body, status = 200) {
+  return Response.json(body, { status });
+}
+
+function shuffled(entries) {
+  const a = [...entries];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuestions() {
+  // Jev leans toward earlier options, so the order changes on every request.
+  const entries = shuffled(Object.entries(catalog));
+  const questions = {};
+  for (let i = 0; i * CHUNK < entries.length; i++) {
+    const criteria = Object.fromEntries(entries.slice(i * CHUNK, (i + 1) * CHUNK).map(([slug, e]) => [slug, e.description]));
+    criteria[NONE] = "No emoji in this list represents the topic of the title well";
+    questions[`chunk_${i}`] = { type: "choice", instructions: INSTRUCTIONS, criteria };
+  }
+  return questions;
+}
+
+async function suggest(title, apiKey) {
+  const response = await fetch(TYPESAFE_URL, {
+    method: "POST",
+    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+    body: JSON.stringify({ model: "jev-latest", state: { title }, questions: buildQuestions() }),
+  });
+  if (!response.ok) throw new Error(`TypeSafe responded ${response.status}: ${(await response.text()).slice(0, 200)}`);
+  const { answers } = await response.json();
+  return Object.values(answers)
+    .flatMap((answer) => Object.entries(answer.probabilities))
+    .filter(([slug]) => slug !== NONE)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, SUGGESTIONS)
+    .map(([slug]) => ({ emoji: catalog[slug].emoji, name: catalog[slug].name }));
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (request.method !== "GET" || url.pathname !== "/suggest") return json({ error: "Not found" }, 404);
+    const title = url.searchParams.get("title")?.trim();
+    if (!title) return json({ error: "Missing title" }, 400);
+    if (title.length > MAX_TITLE_LENGTH) return json({ error: `Title is longer than ${MAX_TITLE_LENGTH} characters` }, 400);
+    try {
+      return json({ suggestions: await suggest(title, env.TYPESAFE_API_KEY) });
+    } catch (error) {
+      console.error(error);
+      return json({ error: "Could not get suggestions" }, 502);
+    }
+  },
+};
