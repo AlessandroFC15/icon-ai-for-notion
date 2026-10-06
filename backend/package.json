@@ -9,7 +9,6 @@
     "catalog": "node scripts/build-catalog.js"
   },
   "devDependencies": {
-    "emojilib": "^4.0.3",
     "unicode-emoji-json": "^0.9.0",
     "wrangler": "^4.147.0"
   }

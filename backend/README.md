@@ -14,7 +14,7 @@ Example: `GET /suggest?title=Trip to Japan`
 {"suggestions":[{"emoji":"🗾","name":"map of Japan"},{"emoji":"🗻","name":"mount fuji"},{"emoji":"🇯🇵","name":"flag Japan"}]}
 ```
 
-The endpoint is public and has no rate limiting yet.
+The endpoint is public. `/suggest` is limited to 20 requests a minute per install and 40 a minute per IP address, and answers `429` beyond that. A request Jev refuses for its own rate limit is retried up to twice before failing.
 
 The `icon-ai-for-notion-backend` part is the Cloudflare account's `workers.dev` subdomain. Renaming it in the Cloudflare dashboard changes this URL.
 
@@ -54,4 +54,4 @@ The deployed Worker reads the key from a secret, set once with `npx wrangler sec
 
 ## Catalog
 
-`src/catalog.json` holds every emoji in Notion's picker with the description Jev sees. Regenerate it with `npm run catalog` after refreshing `../data/notion-emojis.json` or updating the emoji packages.
+`src/catalog.json` holds every emoji in Notion's picker, keyed by the slug Jev chooses from (the emoji's name with underscores, such as `map_of_japan`). Jev sees only the slug. Regenerate the file with `npm run catalog` after refreshing `../data/notion-emojis.json` or updating the emoji package.

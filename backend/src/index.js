@@ -12,6 +12,10 @@ const CHUNK = 250;
 const NONE = "none_of_these";
 const MAX_TITLE_LENGTH = 200;
 const SUGGESTIONS = 3;
+// Jev limits tokens per second across the whole account, so two requests landing together can
+// be refused. A refused request is retried after a short pause instead of failing.
+const JEV_RETRIES = 2;
+const MAX_RETRY_WAIT_MS = 2000;
 
 function json(body, status = 200) {
   return Response.json(body, { status });
@@ -31,21 +35,33 @@ function buildQuestions() {
   const entries = shuffled(Object.entries(catalog));
   const questions = {};
   for (let i = 0; i * CHUNK < entries.length; i++) {
-    const criteria = Object.fromEntries(entries.slice(i * CHUNK, (i + 1) * CHUNK).map(([slug, e]) => [slug, e.description]));
+    // The slug alone describes each option (see scripts/build-catalog.js).
+    const criteria = Object.fromEntries(entries.slice(i * CHUNK, (i + 1) * CHUNK).map(([slug]) => [slug, null]));
     criteria[NONE] = "No emoji in this list represents the topic of the title well";
     questions[`chunk_${i}`] = { type: "choice", instructions: INSTRUCTIONS, criteria };
   }
   return questions;
 }
 
+async function askJev(title, apiKey) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(TYPESAFE_URL, {
+      method: "POST",
+      headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({ model: "jev-latest", state: { title }, questions: buildQuestions() }),
+    });
+    if (response.ok) return response.json();
+    if (response.status !== 429 || attempt === JEV_RETRIES) {
+      throw new Error(`TypeSafe responded ${response.status}: ${(await response.text()).slice(0, 200)}`);
+    }
+    const advised = Number(response.headers.get("retry-after")) * 1000;
+    const wait = advised > 0 ? advised : 400 * (attempt + 1) + Math.random() * 300;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(wait, MAX_RETRY_WAIT_MS)));
+  }
+}
+
 async function suggest(title, apiKey) {
-  const response = await fetch(TYPESAFE_URL, {
-    method: "POST",
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ model: "jev-latest", state: { title }, questions: buildQuestions() }),
-  });
-  if (!response.ok) throw new Error(`TypeSafe responded ${response.status}: ${(await response.text()).slice(0, 200)}`);
-  const { answers, usage } = await response.json();
+  const { answers, usage } = await askJev(title, apiKey);
   const ranked = Object.values(answers)
     .flatMap((answer) => Object.entries(answer.probabilities))
     .filter(([slug]) => slug !== NONE)
@@ -58,11 +74,21 @@ async function suggest(title, apiKey) {
   };
 }
 
+// Each suggestion costs a Jev request, so both the caller's address and its install id are
+// limited. The install id alone would not do: a script can invent a new one per request.
+async function isRateLimited(request, env, install) {
+  const checks = [env.IP_LIMITER?.limit({ key: request.headers.get("cf-connecting-ip") ?? "unknown" })];
+  if (install) checks.push(env.INSTALL_LIMITER?.limit({ key: install.id }));
+  const results = await Promise.all(checks);
+  return results.some((result) => result && !result.success);
+}
+
 async function handleSuggest(request, env, ctx, url) {
   const title = url.searchParams.get("title")?.trim();
   if (!title) return json({ error: "Missing title" }, 400);
   if (title.length > MAX_TITLE_LENGTH) return json({ error: `Title is longer than ${MAX_TITLE_LENGTH} characters` }, 400);
   const install = readInstall(request);
+  if (await isRateLimited(request, env, install)) return json({ error: "Too many requests" }, 429);
   const started = Date.now();
   try {
     const { suggestions, topProbability, inputTokens } = await suggest(title, env.TYPESAFE_API_KEY);

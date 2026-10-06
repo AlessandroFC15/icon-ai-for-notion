@@ -1,5 +1,10 @@
 {
   "name": "icon-ai-for-notion",
   "main": "src/index.js",
-  "compatibility_date": "2026-09-01"
+  "compatibility_date": "2026-09-01",
+  // Suggestions per minute, per caller. A person clicks a few times a minute at most.
+  "ratelimits": [
+    { "name": "INSTALL_LIMITER", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
+    { "name": "IP_LIMITER", "namespace_id": "1002", "simple": { "limit": 40, "period": 60 } }
+  ]
 }
