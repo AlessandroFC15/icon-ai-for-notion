@@ -3,6 +3,19 @@
   "name": "Icon AI for Notion",
   "version": "0.1.0",
   "description": "Suggests a page icon from the page title.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Icon AI for Notion",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
   "background": { "service_worker": "background.js" },
   "host_permissions": ["https://icon-ai-for-notion.icon-ai-for-notion-backend.workers.dev/*"],
   "content_scripts": [
