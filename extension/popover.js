@@ -6,17 +6,13 @@ function closePopover() {
   openPopover?.close();
 }
 
-// Shows suggestions under `anchor`. `load` resolves to a ranked emoji list; `apply` sets one.
-function showPopover(anchor, { load, apply, onClose }) {
+// Shows suggestions under `anchor`. `load` resolves to a ranked emoji list and `onPick` receives
+// the chosen one. Nothing is drawn while loading: `onLoading` lets the anchor show progress, and
+// the popover appears once there is something to show. `error` opens it on a message instead.
+function showPopover(anchor, { load, onPick, onLoading, onClose, error }) {
   closePopover();
 
   const root = document.createElement("div");
-  root.className = `icon-ai-popover ${isDarkTheme() ? "icon-ai-dark" : "icon-ai-light"}`;
-  const rect = anchor.getBoundingClientRect();
-  root.style.top = `${rect.bottom + 6}px`;
-  root.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 220))}px`;
-  document.body.append(root);
-
   let emojis = [];
   let page = 0;
 
@@ -27,57 +23,59 @@ function showPopover(anchor, { load, apply, onClose }) {
     return node;
   }
 
-  function renderLoading() {
-    const row = el("div", "icon-ai-row");
-    for (let i = 0; i < PAGE_SIZE; i++) row.append(el("div", "icon-ai-option icon-ai-skeleton"));
-    root.replaceChildren(row);
+  function show(...children) {
+    root.replaceChildren(...children);
+    if (root.isConnected) return;
+    root.className = `icon-ai-popover ${isDarkTheme() ? "icon-ai-dark" : "icon-ai-light"}`;
+    const rect = anchor.getBoundingClientRect();
+    root.style.top = `${rect.bottom + 6}px`;
+    root.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 220))}px`;
+    document.body.append(root);
   }
 
-  function renderMessage(text, retry) {
-    const button = el("button", "icon-ai-link", "Try again");
-    button.addEventListener("click", retry);
-    root.replaceChildren(el("div", "icon-ai-message", text), button);
+  function renderMessage(text) {
+    const retry = el("button", "icon-ai-link", "Try again");
+    retry.addEventListener("click", fetchOptions);
+    show(el("div", "icon-ai-message", text), retry);
   }
 
   function renderOptions() {
     const row = el("div", "icon-ai-row");
     for (const emoji of emojis.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)) {
       const option = el("button", "icon-ai-option", emoji);
-      option.addEventListener("click", () => choose(emoji));
+      option.addEventListener("click", () => {
+        close();
+        onPick(emoji);
+      });
       row.append(option);
     }
-    root.replaceChildren(row);
+    const children = [row];
     if (emojis.length > PAGE_SIZE) {
       const more = el("button", "icon-ai-link icon-ai-more", "More ↻");
       more.addEventListener("click", () => {
         page = (page + 1) % Math.ceil(emojis.length / PAGE_SIZE);
         renderOptions();
       });
-      root.append(more);
+      children.push(more);
     }
+    show(...children);
   }
 
   async function fetchOptions() {
-    renderLoading();
+    root.remove();
+    onLoading?.(true);
+    let failed = false;
     try {
       emojis = await load();
-      if (emojis.length === 0) throw new Error("no suggestions");
-      page = 0;
-      if (root.isConnected) renderOptions();
+      failed = emojis.length === 0;
     } catch {
-      if (root.isConnected) renderMessage("Couldn't get suggestions.", fetchOptions);
+      failed = true;
     }
-  }
-
-  async function choose(emoji) {
-    root.classList.add("icon-ai-busy");
-    try {
-      await apply(emoji);
-      close();
-    } catch {
-      root.classList.remove("icon-ai-busy");
-      if (root.isConnected) renderMessage("Couldn't set the icon.", renderOptions);
-    }
+    if (openPopover !== handle) return; // closed while loading
+    onLoading?.(false);
+    page = 0;
+    if (failed) renderMessage("Couldn't get suggestions.");
+    else renderOptions();
   }
 
   function onKeydown(event) {
@@ -95,6 +93,7 @@ function showPopover(anchor, { load, apply, onClose }) {
     document.removeEventListener("keydown", onKeydown, true);
     document.removeEventListener("pointerdown", onPointerdown, true);
     window.removeEventListener("resize", close);
+    onLoading?.(false);
     onClose?.();
   }
 
@@ -103,5 +102,6 @@ function showPopover(anchor, { load, apply, onClose }) {
   document.addEventListener("keydown", onKeydown, true);
   document.addEventListener("pointerdown", onPointerdown, true);
   window.addEventListener("resize", close);
-  fetchOptions();
+  if (error) renderMessage(error);
+  else fetchOptions();
 }

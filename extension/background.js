@@ -1,5 +1,5 @@
 // The backend call lives here because content scripts are bound by the page's CORS and CSP.
-const BACKEND_URL = "http://localhost:8787";
+const BACKEND_URL = "https://icon-ai-for-notion.icon-ai-for-notion-backend.workers.dev";
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type !== "suggest") return;

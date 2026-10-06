@@ -61,3 +61,33 @@ async function setPageIcon(pageId, emoji) {
     ],
   });
 }
+
+// Draws `emoji` where Notion will render the page icon, so it appears before Notion syncs the
+// write back. Notion keeps an empty slot for the icon: above the controls on a full page
+// (78px), below them in a peek (36px). Returns null when the layout is not one of those two
+// known shapes, such as a page with a cover, so nothing is ever drawn in the wrong place.
+function showIconPreview(controls, emoji) {
+  const peek = controls.closest(".notion-peek-renderer");
+  const slot = peek
+    ? controls.closest(".peek-top-hover-area")?.parentElement?.nextElementSibling
+    : controls.parentElement?.previousElementSibling;
+  const knownLayout = getComputedStyle(controls).paddingTop === (peek ? "4px" : "80px");
+  if (!slot || slot.childElementCount > 0 || slot.getBoundingClientRect().height > 0 || !knownLayout) return null;
+
+  const icon = document.createElement("div");
+  icon.className = `icon-ai-preview ${peek ? "icon-ai-preview-peek" : "icon-ai-preview-page"}`;
+  icon.textContent = emoji;
+  slot.append(icon);
+  // On a full page the controls row loses its top padding once there is an icon above it.
+  const host = peek ? null : slot.parentElement;
+  host?.classList.add("icon-ai-preview-host");
+
+  return {
+    // True once Notion has rendered the real icon next to the preview, or the page is gone.
+    isReplaced: () => !icon.isConnected || slot.childElementCount > 1,
+    remove() {
+      icon.remove();
+      host?.classList.remove("icon-ai-preview-host");
+    },
+  };
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Suggest icon: loading variants</title>
+<style>
+  /* Mock of Notion's page header row, one card per loading variant. */
+  :root {
+    --bg: #191919; --card: #202020; --line: rgba(255,255,255,.09);
+    --text: rgba(255,255,255,.88); --muted: rgba(255,255,255,.46); --hover: rgba(255,255,255,.06);
+    --shine: #fff; --gold: #f7c948;
+    color-scheme: dark;
+  }
+  :root.light {
+    --bg: #fff; --card: #fbfbfa; --line: rgba(55,53,47,.12);
+    --text: rgba(55,53,47,.95); --muted: rgba(55,53,47,.5); --hover: rgba(55,53,47,.06);
+    --shine: #000; --gold: #e0a100;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 24px 64px; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 20px; max-width: 60ch; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; color: var(--muted); }
+  .toolbar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 20px; }
+  .name { font-weight: 600; }
+  .name b { display: inline-block; width: 22px; height: 22px; margin-right: 8px; border-radius: 6px;
+    background: var(--hover); text-align: center; line-height: 22px; font-size: 12px; }
+  .what { color: var(--muted); font-size: 13px; margin: 4px 0 22px; min-height: 40px; }
+  .row { display: flex; gap: 2px; margin-left: -6px; color: var(--muted); font-size: 14px; white-space: nowrap; }
+  .btn { display: inline-flex; align-items: center; height: 28px; padding: 0 6px; border-radius: 6px; user-select: none; }
+  .btn.suggest { cursor: pointer; }
+  .btn.suggest:hover { background: var(--hover); }
+  .glyph { width: 14px; height: 14px; margin-right: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .title { font-size: 30px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+
+  /* The sparkle slot. Every variant animates what is inside .spark while .loading is set. */
+  .spark { position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; margin-right: 6px; font-size: 13px; line-height: 1; }
+  .spark > .e { display: inline-block; }
+
+  /* Text shine, shared by all variants (toggle in the toolbar). */
+  .shine .loading .label {
+    background: linear-gradient(90deg, currentColor 35%, var(--shine) 50%, currentColor 65%) 0 0 / 250% 100%;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    animation: shimmer 1.2s linear infinite;
+  }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+  /* A. Twinkle: what the extension does today. */
+  [data-v="a"].loading .e { animation: twinkle .9s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.4) rotate(20deg); } }
+
+  /* B. Three stars, each twinkling out of step. */
+  .stars { width: 16px; height: 16px; overflow: visible; }
+  .stars path { fill: var(--gold); transform-box: fill-box; transform-origin: center; }
+  [data-v="b"].loading .stars path { animation: star 1.2s ease-in-out infinite; }
+  [data-v="b"].loading .stars path:nth-child(2) { animation-delay: .4s; }
+  [data-v="b"].loading .stars path:nth-child(3) { animation-delay: .8s; }
+  @keyframes star { 0%,100% { transform: scale(.25); opacity: .35; } 50% { transform: scale(1); opacity: 1; } }
+
+  /* C. Spin and pop. */
+  [data-v="c"].loading .e { animation: spin 1.1s cubic-bezier(.5,-0.4,.3,1.5) infinite; }
+  @keyframes spin { 0% { transform: rotate(0) scale(1); } 60% { transform: rotate(180deg) scale(1.35); } 100% { transform: rotate(180deg) scale(1); } }
+
+  /* D. Burst: small stars fly out of the sparkle. */
+  .bit { position: absolute; left: 50%; top: 50%; font-size: 7px; color: var(--gold); opacity: 0; pointer-events: none; }
+  [data-v="d"].loading .e { animation: beat 1.2s ease-out infinite; }
+  [data-v="d"].loading .bit { animation: fly 1.2s ease-out infinite; }
+  .bit:nth-of-type(1) { --x: -11px; --y: -10px; }
+  .bit:nth-of-type(2) { --x: 10px; --y: -11px; animation-delay: .1s !important; }
+  .bit:nth-of-type(3) { --x: 12px; --y: 8px; animation-delay: .2s !important; }
+  .bit:nth-of-type(4) { --x: -10px; --y: 10px; animation-delay: .3s !important; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 15% { transform: scale(1.35); } 40% { transform: scale(1); } }
+  @keyframes fly { 0% { transform: translate(-50%,-50%) scale(.4); opacity: 0; } 20% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1); opacity: 0; } }
+
+  /* E. Shuffle: the slot flips through candidate icons. */
+  .reel { display: none; height: 16px; overflow: hidden; }
+  .reel span { display: block; height: 16px; line-height: 16px; text-align: center; }
+  [data-v="e"].loading .e { display: none; }
+  [data-v="e"].loading .reel { display: block; }
+  [data-v="e"].loading .reel div { animation: reel 1.6s steps(8) infinite; }
+  @keyframes reel { to { transform: translateY(-128px); } }
+
+  /* F. Glow: the sparkle breathes with a halo. */
+  [data-v="f"].loading .e { animation: glow 1.3s ease-in-out infinite; }
+  @keyframes glow { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 0 transparent); }
+    50% { transform: scale(1.25); filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px var(--gold)); } }
+
+  /* G. Orbit: a small star circles the sparkle. */
+  .moon { position: absolute; inset: 0; opacity: 0; font-size: 6px; color: var(--gold); }
+  .moon::before { content: "✦"; position: absolute; left: 50%; top: -5px; transform: translateX(-50%); }
+  [data-v="g"].loading .moon { opacity: 1; animation: orbit 1.1s linear infinite; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0s !important; } }
+</style>
+
+<main class="shine">
+  <h1>Suggest icon: loading variants</h1>
+  <p class="lede">Each card shows the button while suggestions load. Click a button to switch it between idle and loading. Tell me a letter, or a mix, such as "B with the text shine off".</p>
+  <div class="toolbar">
+    <label><input type="checkbox" id="shine" checked> Text shine</label>
+    <label><input type="checkbox" id="light"> Light theme</label>
+    <label><input type="checkbox" id="idle"> Show all idle</label>
+  </div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+  const STARS = `<svg class="stars" viewBox="-10 -10 20 20" aria-hidden="true">
+    <path d="M-2,-6 C-1,-0.5 -0.5,0 5,1.5 C-0.5,3 -1,3.5 -2,9 C-3,3.5 -3.5,3 -9,1.5 C-3.5,0 -3,-0.5 -2,-6Z"/>
+    <path d="M6,-9.5 C6.4,-7 6.6,-6.8 9.5,-6 C6.6,-5.2 6.4,-5 6,-2.5 C5.6,-5 5.4,-5.2 2.5,-6 C5.4,-6.8 5.6,-7 6,-9.5Z"/>
+    <path d="M6.5,4 C6.8,5.8 7,6 9,6.5 C7,7 6.8,7.2 6.5,9 C6.2,7.2 6,7 4,6.5 C6,6 6.2,5.8 6.5,4Z"/></svg>`;
+  const EMOJI = `<span class="e">✨</span>`;
+  const variants = [
+    ["a", "Twinkle", "What the extension does today: the sparkle grows and tilts.", EMOJI],
+    ["b", "Three stars", "Drawn stars that light up one after another, in place of the emoji.", STARS],
+    ["c", "Spin and pop", "The sparkle flips half a turn with a little overshoot.", EMOJI],
+    ["d", "Burst", "The sparkle beats and throws off small stars.", EMOJI + `<i class="bit">✦</i><i class="bit">✦</i><i class="bit">✦</i><i class="bit">✦</i>`],
+    ["e", "Shuffle", "The slot flips through candidate icons, as if choosing one.", EMOJI + `<span class="reel"><div>${["✨","🗾","🎸","📅","🍳","💼","🏠","🎁","✨"].map((x) => `<span>${x}</span>`).join("")}</div></span>`],
+    ["f", "Glow", "The sparkle breathes with a soft golden halo.", EMOJI],
+    ["g", "Orbit", "A tiny star circles the sparkle.", EMOJI + `<span class="moon"></span>`],
+  ];
+  const grid = document.getElementById("grid");
+  for (const [id, name, what, spark] of variants) {
+    grid.insertAdjacentHTML("beforeend", `
+      <section class="card">
+        <div class="name"><b>${id.toUpperCase()}</b>${name}</div>
+        <div class="what">${what}</div>
+        <div class="row">
+          <span class="btn"><span class="glyph"></span>Add icon</span>
+          <span class="btn suggest loading" data-v="${id}"><span class="spark">${spark}</span><span class="label">Suggest icon</span></span>
+          <span class="btn"><span class="glyph"></span>Add cover</span>
+        </div>
+        <div class="title">Trip to Japan</div>
+      </section>`);
+  }
+  const buttons = [...document.querySelectorAll(".suggest")];
+  for (const button of buttons) button.addEventListener("click", () => button.classList.toggle("loading"));
+  document.getElementById("shine").addEventListener("change", (e) => document.querySelector("main").classList.toggle("shine", e.target.checked));
+  document.getElementById("light").addEventListener("change", (e) => document.documentElement.classList.toggle("light", e.target.checked));
+  document.getElementById("idle").addEventListener("change", (e) => buttons.forEach((b) => b.classList.toggle("loading", !e.target.checked)));
+</script>
