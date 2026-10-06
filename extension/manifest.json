@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "matches": ["https://app.notion.com/*"],
-      "js": ["notion.js", "popover.js", "content.js"],
+      "js": ["notion.js", "strings.js", "popover.js", "content.js"],
       "css": ["content.css"]
     }
   ]

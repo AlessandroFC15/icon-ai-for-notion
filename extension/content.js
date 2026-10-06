@@ -104,7 +104,7 @@ function createButton(addIcon) {
   spark.innerHTML = SPARK_SVG;
   const label = document.createElement("span");
   label.className = "icon-ai-label";
-  label.textContent = "Suggest icon";
+  label.textContent = t("suggestIcon");
   button.append(spark, label);
 
   button.addEventListener("click", (event) => {

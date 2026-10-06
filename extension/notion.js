@@ -1,9 +1,9 @@
 // Everything that depends on Notion's undocumented DOM lives in this file, so a Notion change
 // is a one-file fix. See docs/spike-2-notion-write.md.
 
-const ADD_ICON_TEXT = "Add icon";
+// Notion translates its labels, so controls are found by structure and never by their text.
+const ADD_ICON_GLYPH_SELECTOR = "svg.emojiFaceFill";
 const SUGGEST_CLASS = "icon-ai-suggest";
-const PICKER_SELECTOR = '[role="dialog"][aria-label="Page icon"]';
 const DRIVING_CLASS = "icon-ai-driving";
 const STEP_TIMEOUT_MS = 4000;
 
@@ -13,7 +13,7 @@ function findPageControls() {
 
 function findAddIconButton(controls) {
   return [...controls.querySelectorAll('[role="button"]')].find(
-    (button) => !button.classList.contains(SUGGEST_CLASS) && button.textContent.trim() === ADD_ICON_TEXT,
+    (button) => !button.classList.contains(SUGGEST_CLASS) && button.querySelector(ADD_ICON_GLYPH_SELECTOR),
   );
 }
 
@@ -27,6 +27,12 @@ function findPage(element) {
     if (heading) return { id: block.dataset.blockId, title: heading.textContent.trim() };
   }
   return null;
+}
+
+// The language Notion's interface is in, such as "en", "pt" or "es". It can differ from the
+// browser's language.
+function notionLanguage() {
+  return document.documentElement.lang.split("-")[0].toLowerCase();
 }
 
 function isDarkTheme() {
@@ -63,8 +69,11 @@ function waitFor(find, timeoutMs = STEP_TIMEOUT_MS) {
   });
 }
 
+// The icon picker is the one dialog holding both a filter input and a grid of emoji cells.
 function findPicker() {
-  return document.querySelector(PICKER_SELECTOR);
+  return [...document.querySelectorAll('[role="dialog"]')].find(
+    (dialog) => dialog.querySelector("input") && dialog.querySelector('[role="gridcell"]'),
+  );
 }
 
 // The emoji Notion currently shows as a page icon inside `scope`, or null.

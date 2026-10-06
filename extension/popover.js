@@ -36,7 +36,7 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
   }
 
   function renderMessage(text) {
-    const retry = el("button", "icon-ai-link", "Try again");
+    const retry = el("button", "icon-ai-link", t("tryAgain"));
     retry.addEventListener("click", fetchOptions);
     show(el("div", "icon-ai-message", text), retry);
   }
@@ -54,7 +54,7 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
     }
     const children = [row];
     if (emojis.length > PAGE_SIZE) {
-      const more = el("button", "icon-ai-link icon-ai-more", "More ↻");
+      const more = el("button", "icon-ai-link icon-ai-more", `${t("more")} ↻`);
       more.addEventListener("click", () => {
         moreClicks++;
         page = (page + 1) % Math.ceil(emojis.length / PAGE_SIZE);
@@ -78,7 +78,7 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
     if (openPopover !== handle) return; // closed while loading
     onLoading?.(false);
     page = 0;
-    if (failed) renderMessage("Couldn't get suggestions.");
+    if (failed) renderMessage(t("noSuggestions"));
     else renderOptions();
   }
 
