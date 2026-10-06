@@ -1,4 +1,6 @@
 // GET /suggest?title=... -> three emoji suggestions for a Notion page title, ranked by Jev.
+// POST /event            -> a usage event from the extension, forwarded to PostHog.
+import { capture, readInstall, sanitizeEvent } from "./analytics.js";
 import catalog from "./catalog.json";
 
 const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
@@ -43,27 +45,56 @@ async function suggest(title, apiKey) {
     body: JSON.stringify({ model: "jev-latest", state: { title }, questions: buildQuestions() }),
   });
   if (!response.ok) throw new Error(`TypeSafe responded ${response.status}: ${(await response.text()).slice(0, 200)}`);
-  const { answers } = await response.json();
-  return Object.values(answers)
+  const { answers, usage } = await response.json();
+  const ranked = Object.values(answers)
     .flatMap((answer) => Object.entries(answer.probabilities))
     .filter(([slug]) => slug !== NONE)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, SUGGESTIONS)
-    .map(([slug]) => ({ emoji: catalog[slug].emoji, name: catalog[slug].name }));
+    .slice(0, SUGGESTIONS);
+  return {
+    suggestions: ranked.map(([slug]) => ({ emoji: catalog[slug].emoji, name: catalog[slug].name })),
+    topProbability: ranked[0]?.[1],
+    inputTokens: usage?.input_tokens,
+  };
+}
+
+async function handleSuggest(request, env, ctx, url) {
+  const title = url.searchParams.get("title")?.trim();
+  if (!title) return json({ error: "Missing title" }, 400);
+  if (title.length > MAX_TITLE_LENGTH) return json({ error: `Title is longer than ${MAX_TITLE_LENGTH} characters` }, 400);
+  const install = readInstall(request);
+  const started = Date.now();
+  try {
+    const { suggestions, topProbability, inputTokens } = await suggest(title, env.TYPESAFE_API_KEY);
+    // The title itself is never sent to analytics.
+    capture(env, ctx, install, "suggestions_served", {
+      latency_ms: Date.now() - started,
+      count: suggestions.length,
+      top_probability: topProbability,
+      input_tokens: inputTokens,
+    });
+    return json({ suggestions });
+  } catch (error) {
+    console.error(error);
+    capture(env, ctx, install, "jev_request_failed", { latency_ms: Date.now() - started });
+    return json({ error: "Could not get suggestions" }, 502);
+  }
+}
+
+async function handleEvent(request, env, ctx) {
+  const install = readInstall(request);
+  if (!install) return json({ error: "Missing install id" }, 400);
+  const event = sanitizeEvent(await request.json().catch(() => null));
+  if (!event) return json({ error: "Unknown event" }, 400);
+  capture(env, ctx, install, event.name, event.properties);
+  return json({ ok: true });
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (request.method !== "GET" || url.pathname !== "/suggest") return json({ error: "Not found" }, 404);
-    const title = url.searchParams.get("title")?.trim();
-    if (!title) return json({ error: "Missing title" }, 400);
-    if (title.length > MAX_TITLE_LENGTH) return json({ error: `Title is longer than ${MAX_TITLE_LENGTH} characters` }, 400);
-    try {
-      return json({ suggestions: await suggest(title, env.TYPESAFE_API_KEY) });
-    } catch (error) {
-      console.error(error);
-      return json({ error: "Could not get suggestions" }, 502);
-    }
+    if (request.method === "GET" && url.pathname === "/suggest") return handleSuggest(request, env, ctx, url);
+    if (request.method === "POST" && url.pathname === "/event") return handleEvent(request, env, ctx);
+    return json({ error: "Not found" }, 404);
   },
 };

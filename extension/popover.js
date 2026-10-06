@@ -7,7 +7,7 @@ function closePopover() {
 }
 
 // Shows suggestions under `anchor`. `load` resolves to a ranked emoji list and `onPick` receives
-// the chosen one. Nothing is drawn while loading: `onLoading` lets the anchor show progress, and
+// the chosen one. `onClose` is told whether options were shown and whether one was picked. Nothing is drawn while loading: `onLoading` lets the anchor show progress, and
 // the popover appears once there is something to show.
 function showPopover(anchor, { load, onPick, onLoading, onClose }) {
   closePopover();
@@ -15,6 +15,8 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
   const root = document.createElement("div");
   let emojis = [];
   let page = 0;
+  let moreClicks = 0;
+  let picked = false;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -44,8 +46,9 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
     for (const emoji of emojis.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)) {
       const option = el("button", "icon-ai-option", emoji);
       option.addEventListener("click", () => {
+        picked = true;
         close();
-        onPick(emoji);
+        onPick(emoji, { rank: emojis.indexOf(emoji) + 1, moreClicks });
       });
       row.append(option);
     }
@@ -53,6 +56,7 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
     if (emojis.length > PAGE_SIZE) {
       const more = el("button", "icon-ai-link icon-ai-more", "More ↻");
       more.addEventListener("click", () => {
+        moreClicks++;
         page = (page + 1) % Math.ceil(emojis.length / PAGE_SIZE);
         renderOptions();
       });
@@ -94,7 +98,7 @@ function showPopover(anchor, { load, onPick, onLoading, onClose }) {
     document.removeEventListener("pointerdown", onPointerdown, true);
     window.removeEventListener("resize", close);
     onLoading?.(false);
-    onClose?.();
+    onClose?.({ picked, shown: emojis.length > 0, moreClicks });
   }
 
   const handle = { anchor, close };

@@ -1,6 +1,6 @@
 # Backend
 
-A Cloudflare Worker that suggests three emojis for a Notion page title, ranked by Jev.
+A Cloudflare Worker that suggests three emojis for a Notion page title, ranked by Jev, and forwards the extension's usage events to PostHog.
 
 ## Deployed URL
 
@@ -17,6 +17,18 @@ Example: `GET /suggest?title=Trip to Japan`
 The endpoint is public and has no rate limiting yet.
 
 The `icon-ai-for-notion-backend` part is the Cloudflare account's `workers.dev` subdomain. Renaming it in the Cloudflare dashboard changes this URL.
+
+## Usage events
+
+`POST /event` takes a usage event from the extension and forwards it to PostHog. `/suggest` records its own events when the request carries an install id. The event list and what is collected are in [`../docs/analytics.md`](../docs/analytics.md).
+
+Events are sent only when `POSTHOG_API_KEY` is set. Set it once on the deployed Worker:
+
+```
+npx wrangler secret put POSTHOG_API_KEY
+```
+
+`POSTHOG_HOST` is optional and defaults to the US host.
 
 ## Run locally
 

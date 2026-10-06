@@ -11,14 +11,30 @@ const SPARK_SVG = `<svg viewBox="-10 -10 20 20" aria-hidden="true">
 const styleObservers = new WeakMap();
 const suggestionCache = new Map(); // "page id:title" -> ranked emojis
 
-async function loadSuggestions(page) {
+// Usage events, sent through the background worker. They never include titles or page ids.
+function track(button, event, properties = {}) {
+  const view = button.closest(".notion-peek-renderer") ? "peek" : "page";
+  chrome.runtime.sendMessage({ type: "track", event, properties: { view, ...properties } }).catch(() => {});
+}
+
+async function loadSuggestions(button, page) {
   const key = `${page.id}:${page.title}`;
-  if (!suggestionCache.has(key)) {
-    const response = await chrome.runtime.sendMessage({ type: "suggest", title: page.title });
-    if (!response?.ok) throw new Error(response?.error ?? "no response");
-    suggestionCache.set(key, response.suggestions.map((suggestion) => suggestion.emoji));
+  const cached = suggestionCache.has(key);
+  const started = performance.now();
+  const elapsed = () => Math.round(performance.now() - started);
+  if (!cached) {
+    const response = await chrome.runtime.sendMessage({ type: "suggest", title: page.title }).catch(() => null);
+    const emojis = response?.ok ? response.suggestions.map((suggestion) => suggestion.emoji) : [];
+    if (emojis.length === 0) {
+      const reason = !response ? "no_response" : !response.ok ? "backend_error" : "empty";
+      track(button, "suggestion_failed", { reason, latency_ms: elapsed() });
+      throw new Error(reason);
+    }
+    suggestionCache.set(key, emojis);
   }
-  return suggestionCache.get(key);
+  const emojis = suggestionCache.get(key);
+  track(button, "suggestions_shown", { count: emojis.length, cached, latency_ms: elapsed() });
+  return emojis;
 }
 
 // Notion fades the controls row in and out by writing inline styles from JavaScript,
@@ -52,6 +68,7 @@ async function applyIcon(button, emoji) {
     if (preview) await waitFor(() => findPageIconEmoji(preview.slot) === emojiKey(emoji));
   } catch (error) {
     console.warn("Icon AI: could not finish setting the icon", error);
+    track(button, "icon_apply_failed", { reason: "picker_timeout" });
   } finally {
     preview?.remove();
     for (const element of hidden) element.classList.remove(HIDDEN_CLASS);
@@ -61,13 +78,19 @@ async function applyIcon(button, emoji) {
 
 function openSuggestions(button, page) {
   showPopover(button, {
-    load: () => loadSuggestions(page),
-    onPick: (emoji) => applyIcon(button, emoji),
+    load: () => loadSuggestions(button, page),
+    onPick: (emoji, { rank, moreClicks }) => {
+      track(button, "icon_picked", { rank, more_clicks: moreClicks });
+      applyIcon(button, emoji);
+    },
     onLoading: (loading) => {
       button.style.setProperty("--icon-ai-shine", isDarkTheme() ? "#fff" : "#000");
       button.classList.toggle(LOADING_CLASS, loading);
     },
-    onClose: () => styleObservers.get(button)?.copy(),
+    onClose: ({ picked, shown, moreClicks }) => {
+      if (shown && !picked && button.isConnected) track(button, "suggestions_dismissed", { more_clicks: moreClicks });
+      styleObservers.get(button)?.copy();
+    },
   });
   styleObservers.get(button)?.copy();
 }
@@ -88,7 +111,9 @@ function createButton(addIcon) {
     event.stopPropagation();
     if (openPopover?.anchor === button) return closePopover();
     const page = findPage(button);
-    if (page?.title) openSuggestions(button, page);
+    if (!page?.title) return;
+    track(button, "suggest_clicked");
+    openSuggestions(button, page);
   });
   return button;
 }
@@ -110,6 +135,7 @@ function sync() {
       const button = createButton(addIcon);
       addIcon.after(button);
       mirrorVisibility(addIcon, button);
+      track(button, "button_shown");
     }
   }
   if (openPopover && !openPopover.anchor.isConnected) closePopover();
