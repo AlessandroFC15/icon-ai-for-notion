@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Icon AI for Notion",
+  "version": "0.1.0",
+  "description": "Suggests a page icon from the page title.",
+  "background": { "service_worker": "background.js" },
+  "host_permissions": ["http://localhost:8787/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://app.notion.com/*"],
+      "js": ["notion.js", "popover.js", "content.js"],
+      "css": ["content.css"]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+.icon-ai-spark {
+  margin-right: 6px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.icon-ai-popover {
+  position: fixed;
+  z-index: 10000;
+  padding: 8px;
+  border-radius: 10px;
+  font: 12px/1.4 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+.icon-ai-dark {
+  background: #252525;
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  --icon-ai-hover: rgba(255, 255, 255, 0.08);
+}
+.icon-ai-light {
+  background: #fff;
+  color: rgba(55, 53, 47, 0.65);
+  border: 1px solid rgba(55, 53, 47, 0.12);
+  --icon-ai-hover: rgba(55, 53, 47, 0.08);
+}
+.icon-ai-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.icon-ai-row {
+  display: flex;
+  gap: 4px;
+}
+.icon-ai-option {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  /* Chrome dims emoji by the text colour's alpha, so the options need an opaque colour. */
+  color: #000;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-ai-option:hover {
+  background: var(--icon-ai-hover);
+}
+.icon-ai-skeleton {
+  background: var(--icon-ai-hover);
+  cursor: default;
+  animation: icon-ai-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes icon-ai-pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+.icon-ai-link {
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.icon-ai-link:hover {
+  background: var(--icon-ai-hover);
+}
+.icon-ai-more {
+  display: block;
+  margin: 6px 0 0 auto;
+}
+.icon-ai-message {
+  padding: 4px 6px;
+}
