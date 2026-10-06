@@ -8,8 +8,8 @@ function closePopover() {
 
 // Shows suggestions under `anchor`. `load` resolves to a ranked emoji list and `onPick` receives
 // the chosen one. Nothing is drawn while loading: `onLoading` lets the anchor show progress, and
-// the popover appears once there is something to show. `error` opens it on a message instead.
-function showPopover(anchor, { load, onPick, onLoading, onClose, error }) {
+// the popover appears once there is something to show.
+function showPopover(anchor, { load, onPick, onLoading, onClose }) {
   closePopover();
 
   const root = document.createElement("div");
@@ -102,6 +102,5 @@ function showPopover(anchor, { load, onPick, onLoading, onClose, error }) {
   document.addEventListener("keydown", onKeydown, true);
   document.addEventListener("pointerdown", onPointerdown, true);
   window.addEventListener("resize", close);
-  if (error) renderMessage(error);
-  else fetchOptions();
+  fetchOptions();
 }

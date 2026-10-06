@@ -1,8 +1,11 @@
-// Everything that depends on Notion's undocumented DOM and private API lives in this file,
-// so a Notion change is a one-file fix. See docs/spike-2-notion-write.md.
+// Everything that depends on Notion's undocumented DOM lives in this file, so a Notion change
+// is a one-file fix. See docs/spike-2-notion-write.md.
 
 const ADD_ICON_TEXT = "Add icon";
 const SUGGEST_CLASS = "icon-ai-suggest";
+const PICKER_SELECTOR = '[role="dialog"][aria-label="Page icon"]';
+const DRIVING_CLASS = "icon-ai-driving";
+const STEP_TIMEOUT_MS = 4000;
 
 function findPageControls() {
   return [...document.querySelectorAll(".notion-page-controls")];
@@ -30,42 +33,82 @@ function isDarkTheme() {
   return document.querySelector(".notion-dark-theme") !== null;
 }
 
-async function notionPost(endpoint, body) {
-  const response = await fetch(`/api/v3/${endpoint}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`${endpoint} ${response.status}`);
-  return response.json();
+// Emoji text without variation selectors or skin tone modifiers, so the same emoji compares
+// equal however Notion renders it (the picker applies the user's preferred skin tone).
+function emojiKey(text) {
+  return text.replace(/[\uFE0F\u{1F3FB}-\u{1F3FF}]/gu, "").trim();
 }
 
-async function setPageIcon(pageId, emoji) {
-  const { recordMap } = await notionPost("syncRecordValuesMain", {
-    requests: [{ pointer: { table: "block", id: pageId }, version: -1 }],
-  });
-  const spaceId = recordMap?.block?.[pageId]?.spaceId;
-  if (!spaceId) throw new Error("page record not found");
-  await notionPost("saveTransactionsFanout", {
-    requestId: crypto.randomUUID(),
-    transactions: [
-      {
-        id: crypto.randomUUID(),
-        spaceId,
-        debug: { userAction: "iconAI.setPageIcon" },
-        operations: [
-          { pointer: { table: "block", id: pageId, spaceId }, path: ["format", "page_icon"], command: "set", args: emoji },
-        ],
-      },
-    ],
+// Resolves with the first truthy result of `find`, re-checked on every DOM change. Driven by a
+// MutationObserver because timers are throttled in background tabs.
+function waitFor(find, timeoutMs = STEP_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const found = find();
+    if (found) return resolve(found);
+    const observer = new MutationObserver(() => {
+      const found = find();
+      if (!found) return;
+      stop();
+      resolve(found);
+    });
+    const timer = setTimeout(() => {
+      stop();
+      reject(new Error("timed out waiting for Notion"));
+    }, timeoutMs);
+    const stop = () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+    observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true });
   });
 }
 
-// Draws `emoji` where Notion will render the page icon, so it appears before Notion syncs the
-// write back. Notion keeps an empty slot for the icon: above the controls on a full page
-// (78px), below them in a peek (36px). Returns null when the layout is not one of those two
-// known shapes, such as a page with a cover, so nothing is ever drawn in the wrong place.
+function findPicker() {
+  return document.querySelector(PICKER_SELECTOR);
+}
+
+// The emoji Notion currently shows as a page icon inside `scope`, or null.
+function findPageIconEmoji(scope) {
+  const icon = scope.querySelector(".notion-record-icon");
+  return icon ? emojiKey(icon.textContent || icon.querySelector("img")?.alt || "") : null;
+}
+
+// Sets the page icon the way a person would: "Add icon", then the emoji in Notion's picker.
+// Notion updates its own state, so the icon is real and clickable at once. The picker is kept
+// invisible while it is driven. If a step fails the picker is left open and becomes visible,
+// so the choice can be finished by hand.
+async function pickPageIcon(addIcon, emoji) {
+  const root = document.documentElement;
+  root.classList.add(DRIVING_CLASS);
+  try {
+    addIcon.click(); // Notion sets a random icon and opens the picker
+    const filter = await waitFor(() => findPicker()?.querySelector("input"));
+    // The filter matches on the emoji character itself. React only notices a value written
+    // through the native setter followed by an input event.
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(filter, emoji);
+    filter.dispatchEvent(new Event("input", { bubbles: true }));
+    const cell = await waitFor(() =>
+      [...(findPicker()?.querySelectorAll('[role="gridcell"]') ?? [])].find(
+        (candidate) => emojiKey(candidate.textContent || candidate.querySelector("img")?.alt || "") === emojiKey(emoji),
+      ),
+    );
+    (cell.firstElementChild ?? cell).click();
+    // Notion does not always close the picker after a pick.
+    findPicker()
+      ?.querySelector("input")
+      ?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+    await waitFor(() => !findPicker());
+  } finally {
+    // Always lifted, or the picker would stay invisible when the user opens it later.
+    root.classList.remove(DRIVING_CLASS);
+  }
+}
+
+// Draws `emoji` where Notion renders the page icon and hides Notion's own icon behind it. It
+// covers the random icon "Add icon" sets before the picked one lands. Notion keeps an empty
+// slot for the icon: above the controls on a full page (78px), below them in a peek (36px).
+// Returns null when the layout is not one of those two known shapes, such as a page with a
+// cover, so nothing is ever drawn in the wrong place.
 function showIconPreview(controls, emoji) {
   const peek = controls.closest(".notion-peek-renderer");
   const slot = peek
@@ -78,15 +121,16 @@ function showIconPreview(controls, emoji) {
   icon.className = `icon-ai-preview ${peek ? "icon-ai-preview-peek" : "icon-ai-preview-page"}`;
   icon.textContent = emoji;
   slot.append(icon);
+  slot.classList.add("icon-ai-preview-slot");
   // On a full page the controls row loses its top padding once there is an icon above it.
   const host = peek ? null : slot.parentElement;
   host?.classList.add("icon-ai-preview-host");
 
   return {
-    // True once Notion has rendered the real icon next to the preview, or the page is gone.
-    isReplaced: () => !icon.isConnected || slot.childElementCount > 1,
+    slot,
     remove() {
       icon.remove();
+      slot.classList.remove("icon-ai-preview-slot");
       host?.classList.remove("icon-ai-preview-host");
     },
   };

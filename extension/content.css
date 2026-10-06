@@ -74,6 +74,15 @@
 .icon-ai-preview-host .notion-page-controls {
   padding-top: 8px !important;
 }
+/* Notion's own icon stays hidden behind the stand-in until it shows the chosen emoji. */
+.icon-ai-preview-slot > :not(.icon-ai-preview) {
+  display: none !important;
+}
+/* While the extension drives Notion's emoji picker, the picker is kept out of sight. */
+.icon-ai-driving [role="dialog"][aria-label="Page icon"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 .icon-ai-popover {
   position: fixed;

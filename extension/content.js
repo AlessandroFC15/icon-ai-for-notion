@@ -10,7 +10,6 @@ const SPARK_SVG = `<svg viewBox="-10 -10 20 20" aria-hidden="true">
 
 const styleObservers = new WeakMap();
 const suggestionCache = new Map(); // "page id:title" -> ranked emojis
-const iconPreviews = new Set();
 
 async function loadSuggestions(page) {
   const key = `${page.id}:${page.title}`;
@@ -37,28 +36,33 @@ function mirrorVisibility(addIcon, button) {
   copy();
 }
 
-// Notion only shows the new icon after its write syncs back, so the chosen emoji is drawn
-// in place right away and swapped for Notion's own once that arrives.
-function applyIcon(button, page, emoji) {
+// Notion's own picker sets the icon, driven out of sight. The chosen emoji is drawn in place
+// first, covering the random icon Notion shows until the pick lands.
+let applying = false;
+async function applyIcon(button, emoji) {
   const controls = button.parentElement;
+  const addIcon = findAddIconButton(controls);
+  if (!addIcon || applying) return;
+  applying = true;
   const preview = showIconPreview(controls, emoji);
-  const hidden = preview ? [findAddIconButton(controls), button].filter(Boolean) : [];
+  const hidden = preview ? [addIcon, button] : [];
   for (const element of hidden) element.classList.add(HIDDEN_CLASS);
-  if (preview) iconPreviews.add(preview);
-
-  setPageIcon(page.id, emoji).catch(() => {
+  try {
+    await pickPageIcon(addIcon, emoji);
+    if (preview) await waitFor(() => findPageIconEmoji(preview.slot) === emojiKey(emoji));
+  } catch (error) {
+    console.warn("Icon AI: could not finish setting the icon", error);
+  } finally {
     preview?.remove();
-    iconPreviews.delete(preview);
     for (const element of hidden) element.classList.remove(HIDDEN_CLASS);
-    if (button.isConnected) openSuggestions(button, page, "Couldn't set the icon.");
-  });
+    applying = false;
+  }
 }
 
-function openSuggestions(button, page, error) {
+function openSuggestions(button, page) {
   showPopover(button, {
-    error,
     load: () => loadSuggestions(page),
-    onPick: (emoji) => applyIcon(button, page, emoji),
+    onPick: (emoji) => applyIcon(button, emoji),
     onLoading: (loading) => {
       button.style.setProperty("--icon-ai-shine", isDarkTheme() ? "#fff" : "#000");
       button.classList.toggle(LOADING_CLASS, loading);
@@ -111,15 +115,7 @@ function sync() {
   if (openPopover && !openPopover.anchor.isConnected) closePopover();
 }
 
-// Runs synchronously on every batch of DOM changes, before the browser paints, so a preview and
-// Notion's real icon are never painted together. It is not deferred to an animation frame
-// because those do not fire in background tabs.
-new MutationObserver(() => {
-  for (const preview of iconPreviews) {
-    if (!preview.isReplaced()) continue;
-    preview.remove();
-    iconPreviews.delete(preview);
-  }
-  sync();
-}).observe(document.documentElement, { childList: true, subtree: true });
+// Runs on every batch of DOM changes. It is not deferred to an animation frame because those
+// do not fire in background tabs.
+new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true });
 sync();

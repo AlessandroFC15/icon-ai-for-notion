@@ -2,6 +2,13 @@
 
 Date: 2026-10-05.
 
+> **Update, 2026-10-06:** the extension no longer writes through this private API. A server
+> write only reached the open page after Notion synced it back (about two seconds in a visible
+> tab, never in a background one), so the icon was not clickable right away. The extension now
+> drives Notion's own emoji picker, kept invisible, so Notion sets the icon itself. See
+> `pickPageIcon` in `extension/notion.js`. The findings below still describe how the API and
+> the page layout behave.
+
 ## Question
 
 Can code running in a logged-in Notion tab set a page's icon through Notion's private API, with no OAuth or integration setup?
