@@ -67,7 +67,7 @@ async function applyIcon(button, emoji) {
     await pickPageIcon(addIcon, emoji);
     if (preview) await waitFor(() => findPageIconEmoji(preview.slot) === emojiKey(emoji));
   } catch (error) {
-    console.warn("Icon AI: could not finish setting the icon", error);
+    console.warn("Notion Icon AI: could not finish setting the icon", error);
     track(button, "icon_apply_failed", { reason: "picker_timeout" });
   } finally {
     preview?.remove();

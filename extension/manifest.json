@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Icon AI for Notion",
+  "name": "Notion Icon AI",
   "version": "0.1.0",
-  "description": "Suggests a page icon from the page title.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -10,7 +11,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "Icon AI for Notion",
+    "default_title": "Notion Icon AI",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"

@@ -1,0 +1,6 @@
+{
+  "extDescription": {
+    "message": "Suggests a page icon from the page title.",
+    "description": "Short description of the extension, shown in the Chrome Web Store and on the extensions page."
+  }
+}
