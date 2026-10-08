@@ -3,6 +3,7 @@
 
 // Notion translates its labels, so controls are found by structure and never by their text.
 const ADD_ICON_GLYPH_SELECTOR = "svg.emojiFaceFill";
+const PAGE_BLOCK_SELECTOR = ".notion-page-block[data-block-id], .notion-collection_view_page-block[data-block-id]";
 const SUGGEST_CLASS = "icon-ai-suggest";
 const DRIVING_CLASS = "icon-ai-driving";
 const STEP_TIMEOUT_MS = 4000;
@@ -22,7 +23,8 @@ function findPage(element) {
   const scope = element.closest(".notion-peek-renderer") ?? element.closest(".notion-frame");
   if (!scope) return null;
   // Relation chips are page blocks too, so only the block holding the title heading counts.
-  for (const block of scope.querySelectorAll(".notion-page-block[data-block-id]")) {
+  // A full-page database holds its title in a collection view page block instead.
+  for (const block of scope.querySelectorAll(PAGE_BLOCK_SELECTOR)) {
     const heading = block.querySelector("h1");
     if (heading) return { id: block.dataset.blockId, title: heading.textContent.trim() };
   }
