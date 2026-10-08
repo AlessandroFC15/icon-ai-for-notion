@@ -32,16 +32,20 @@ npx wrangler secret put POSTHOG_API_KEY
 
 ## Run locally
 
+Needs Node.js and a TypeSafe API key. Run these from `backend/`:
+
 ```
 npm install
 npm run dev
 ```
 
-This serves `http://localhost:8787`. The Jev key is read from `.dev.vars` (gitignored):
+This serves `http://localhost:8787`. The Jev key is read from `backend/.dev.vars` (gitignored):
 
 ```
 TYPESAFE_API_KEY=...
 ```
+
+Try it with `curl "http://localhost:8787/suggest?title=Trip%20to%20Japan"`. To point the extension at it, see "Use a local backend" in [`../README.md`](../README.md).
 
 ## Deploy
 
@@ -51,6 +55,8 @@ npm run deploy
 ```
 
 The deployed Worker reads the key from a secret, set once with `npx wrangler secret put TYPESAFE_API_KEY`.
+
+Deploying to a different Cloudflare account gives the Worker a different URL. The extension then needs that URL in two places: `BACKEND_URL` in `extension/background.js` and `host_permissions` in `extension/manifest.json`.
 
 ## Catalog
 
