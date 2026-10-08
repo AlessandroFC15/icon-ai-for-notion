@@ -1,0 +1,551 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Notion Icon AI: showreel</title>
+<style>
+  /* A 15 second piece (and an 8 second cut of it) on a fixed stage, 1920x1080 unless a feed format is
+     asked for, scaled to fit the window. Every frame is a pure function of the clock (see render), so
+     it plays the same each time and can be stepped. */
+  :root { --gold: #f5b800; --page: #191919; --side: #202020; --text: rgba(255,255,255,.81);
+    --muted: rgba(255,255,255,.46); --faint: rgba(255,255,255,.07); color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+  body { font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--text); }
+  body.playing { cursor: none; }
+  .emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #000; }
+
+  #stage { position: absolute; left: 50%; top: 50%; width: var(--w); height: var(--h); overflow: hidden;
+    background: #0b0b0b; transform-origin: 0 0; }
+  #view { position: absolute; inset: 0; overflow: hidden; background: var(--page); }
+  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: var(--page); transform-origin: 0 0; }
+
+  /* Notion mock, in world coordinates. */
+  .sidebar { position: absolute; left: 0; top: 0; width: 240px; height: 1080px; background: var(--side);
+    border-right: 1px solid var(--faint); padding: 14px 12px; }
+  .side-row { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px; }
+  .doc { width: 16px; height: 18px; border-radius: 3px; border: 1.5px solid rgba(255,255,255,.28); }
+  .bar { height: 10px; border-radius: 5px; background: rgba(255,255,255,.1); }
+  .topbar { position: absolute; left: 240px; top: 0; right: 0; height: 44px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 16px; }
+  .col { position: absolute; left: 726px; top: 120px; width: 708px; }
+  .slot { width: 78px; height: 78px; font-size: 78px; line-height: 78px; display: flex; align-items: center; justify-content: center; }
+  .controls { display: flex; gap: 2px; margin: 8px 0 0 -6px; color: var(--muted); white-space: nowrap; }
+  .btn { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px;
+    border-radius: 6px; overflow: hidden; }
+  .glyph { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .8; }
+  .glyph.cover { height: 11px; border-radius: 3px; }
+  .spark { display: inline-flex; width: 14px; height: 14px; }
+  .spark svg { width: 100%; height: 100%; overflow: visible; }
+  .spark path, .intro path { fill: var(--gold); transform-box: fill-box; transform-origin: center; }
+  .shine { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%); }
+  .title { margin-top: 4px; height: 48px; font-size: 40px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+  .title .ph { color: rgba(255,255,255,.26); }
+  .caret { display: inline-block; width: 2px; height: 40px; margin-left: 2px; vertical-align: -6px; background: var(--text); }
+  .body { margin-top: 26px; width: var(--body); display: grid; gap: 14px; }
+  .body .bar { height: 12px; border-radius: 6px; background: rgba(255,255,255,.08); }
+
+  /* The extension's popover, same measurements as extension/content.css. */
+  .popover { position: absolute; padding: 8px; border-radius: 10px; background: #252525; color: rgba(255,255,255,.6);
+    border: 1px solid rgba(255,255,255,.1); box-shadow: 0 4px 18px rgba(0,0,0,.25); font-size: 12px; line-height: 1.4;
+    transform-origin: 20px 0; }
+  .row { display: flex; gap: 4px; }
+  .option { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 8px;
+    font-size: 30px; line-height: 1; }
+  .more { display: block; width: max-content; margin: 6px 0 0 auto; padding: 2px 6px; }
+
+  .fx { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .flyer { width: 78px; height: 78px; margin: -39px 0 0 -39px; font-size: 78px; line-height: 78px; text-align: center; }
+  .cand { width: 30px; height: 30px; margin: -15px 0 0 -15px; font-size: 24px; line-height: 30px; text-align: center; }
+  .bit { width: 12px; height: 12px; margin: -6px 0 0 -6px;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+  .ring { width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid var(--gold); }
+  .click { width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; border: 2px solid #fff; }
+  .glow { width: 360px; height: 360px; margin: -180px 0 0 -180px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,184,0,.55), transparent 65%); }
+  .cursor { width: 17px; height: 24px; }
+
+  /* Stage layers above the page. */
+  #vignette { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, transparent 62%, rgba(0,0,0,.82) 100%); }
+  #caption { position: absolute; left: 0; right: 0; bottom: var(--caption-bottom); text-align: center; font-size: var(--caption-size); font-weight: 800;
+    letter-spacing: -.02em; line-height: 1.15; color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
+  #caption .w { display: inline-block; overflow: hidden; padding: 0 .12em; vertical-align: bottom; }
+  #caption .w > span { display: inline-block; }
+  #caption .w.gold > span { color: var(--gold); }
+  .intro { position: absolute; left: calc(var(--w) / 2); top: calc(var(--h) / 2); width: 420px; height: 420px; margin: -210px 0 0 -210px; }
+  .intro svg { width: 100%; height: 100%; overflow: visible; }
+  #outro { position: absolute; inset: 0; pointer-events: none; }
+  .halo { position: absolute; left: calc(var(--w) / 2); top: var(--logo-y); width: 1100px; height: 1100px; margin: -550px 0 0 -550px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(245,184,0,.2), transparent 62%); }
+  .logo { position: absolute; left: 0; top: 0; width: 250px; height: 250px; margin: -125px 0 0 -125px; }
+  .wordmark { position: absolute; left: 0; right: 0; top: var(--word-y); text-align: center; font-size: 104px; font-weight: 800;
+    letter-spacing: -.03em; line-height: 1.1; color: #fff; white-space: pre; }
+  .wordmark span { display: inline-block; }
+  .tagline { position: absolute; left: 0; right: 0; top: var(--tag-y); text-align: center; font-size: 38px; line-height: 1.35; color: var(--muted); }
+  .tagline br { display: none; }
+  /* The feed frames are narrow, so the tagline takes two lines there. */
+  .feed .tagline { font-size: 42px; }
+  .feed .tagline br { display: inline; }
+  .lite #vignette, .lite .glow, .lite .halo { display: none; }
+  .lite #caption { text-shadow: none; }
+  .lite .popover { box-shadow: none; }
+  .twinkle { position: absolute; background: var(--gold);
+    clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); }
+
+  #start { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; background: #000; color: var(--muted); font-size: 16px; }
+  #start b { color: #fff; font-size: 28px; }
+  #start a { color: var(--gold); }
+  /* Outlines where the stage sits in the window, for dragging a recording area around it. */
+  #guide { position: absolute; border: 2px solid var(--gold); pointer-events: none; }
+  #start kbd { padding: 2px 7px; border-radius: 5px; border: 1px solid rgba(255,255,255,.25); color: #fff; font: inherit; }
+  [hidden] { display: none !important; }
+</style>
+
+<div id="stage">
+  <div id="view">
+    <div id="world">
+      <aside class="sidebar" id="sidebar"></aside>
+      <header class="topbar">
+        <div class="bar" style="width:150px"></div>
+        <div style="display:flex;gap:12px"><div class="bar" style="width:46px"></div><div class="bar" style="width:22px"></div><div class="bar" style="width:22px"></div></div>
+      </header>
+      <div class="col">
+        <div class="slot emoji" id="slot"></div>
+        <div class="controls" id="controls">
+          <span class="btn"><span class="glyph"></span>Add icon</span>
+          <span class="btn" id="suggest"><span class="spark" id="spark"></span>Suggest icon<span class="shine" id="shine"></span></span>
+          <span class="btn"><span class="glyph cover"></span>Add cover</span>
+        </div>
+        <div class="title" id="title"></div>
+        <div class="body" id="body"></div>
+      </div>
+      <div class="popover" id="popover">
+        <div class="row" id="options"></div>
+        <span class="more">More ↻</span>
+      </div>
+      <div class="fx glow" id="glow"></div>
+      <div class="fx ring" id="ring"></div>
+      <div id="fxLayer"></div>
+      <div class="fx click" id="click"></div>
+      <svg class="fx cursor" id="cursor" viewBox="0 0 17 24"><path d="M1 1v19l5-4.6 3.2 7.4 3-1.3-3.2-7.3H16z" fill="#fff" stroke="#000" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div id="vignette"></div>
+  <div class="intro" id="intro"></div>
+  <div id="caption"></div>
+  <div id="outro">
+    <div class="halo" id="halo"></div>
+    <div id="twinkles"></div>
+    <img class="logo" id="logo" src="../extension/icons/icon512.png" alt="">
+    <div class="wordmark" id="wordmark"></div>
+    <div class="tagline" id="tagline">The right icon for every page,<br> straight from its title.</div>
+  </div>
+</div>
+
+<div id="start">
+  <b>Notion Icon AI: showreel, <span id="cutName"></span></b>
+  <div><kbd>Space</kbd> play or pause &nbsp; <kbd>R</kbd> restart &nbsp; <kbd>F</kbd> full screen &nbsp; <kbd>←</kbd> <kbd>→</kbd> step a frame</div>
+  <div>Playback starts after half a second of black and holds on the last frame.</div>
+  <div>The gold line marks the frame to record. Its outer edge is the edge of the picture.</div>
+  <div id="guide"></div>
+  <div>Video: <a href="?cut=15">15 seconds</a> &nbsp; <a href="?cut=8">8 seconds</a> &nbsp; <a href="?format=1x1&cut=15&lite=0">square, 15 seconds</a> &nbsp; GIF: <a href="?format=4x5">4:5, 8 seconds</a> &nbsp; <a href="?format=1x1">square, 10 seconds</a></div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const PREROLL = 0.5;
+
+  // Easing. Everything takes progress in 0..1 except spring, which takes seconds since it began.
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const lerp = (a, b, p) => a + (b - a) * p;
+  const seg = (t, a, b) => clamp((t - a) / (b - a));
+  const outCubic = (p) => 1 - (1 - p) ** 3;
+  const inCubic = (p) => p ** 3;
+  const inOut = (p) => (p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2);
+  const outExpo = (p) => (p >= 1 ? 1 : 1 - 2 ** (-10 * p));
+  const spring = (dt, freq = 15, damp = 7) => (dt <= 0 ? 0 : 1 - Math.exp(-damp * dt) * Math.cos(freq * dt));
+  function random(seed) {
+    return () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const FIRST = { title: "Trip to Japan", icon: "🇯🇵", bars: [92, 78, 85, 40] };
+  const WEDDING = { title: "Wedding Plans", icon: "💍", bars: [70, 95, 55, 80] };
+  const READING = { title: "Reading List", icon: "📚", bars: [88, 60, 92, 35] };
+  const RECEITAS = { title: "Receitas da Vovó", icon: "🍲", bars: [64, 82, 74, 58] };
+  const VIAJE = { title: "Viaje a México", icon: "🌮", bars: [96, 70, 48, 86] };
+  const ROADMAP = { title: "Q4 Roadmap", icon: "🚀", bars: [80, 90, 66, 44] };
+  const OPTIONS = [FIRST.icon, "🗻", "🍣"];
+  const CANDIDATES = ["🗾", "🍣", "⛩️", "🌸", "🎌", "🍜", "🚅", "🏯", "🍵", "✈️", "🗼", "🎎"];
+
+  // The cuts, picked with ?cut=8, 10 or 15 (each format has its own default). Times are seconds on that cut's clock. The
+  // short ones tell the same story with a tighter intro and a three page montage.
+  const CUTS = {
+    15: {
+      times: {
+        stars: [0.1, 0.42, 0.6], reveal: 1.1, push: [1.6, 3.0], type: [1.9, 3.1], cursorIn: [3.0, 3.9], press: 4.1,
+        loaded: 5.7, toOption: [6.6, 7.2], pick: 7.5, land: 8.05, montage: 9.2, beat: 0.68, outro: 12.6,
+      },
+      pages: [FIRST, WEDDING, READING, RECEITAS, VIAJE, ROADMAP],
+      captions: [
+        [2.0, 4.0, "Name your page."],
+        [4.1, 7.4, "Ask for an *icon."],
+        [7.5, 9.1, "Pick. *Done."],
+        [9.25, 12.5, "Every page. / *Any language."],
+      ],
+    },
+    10: {
+      times: {
+        stars: [0.05, 0.28, 0.4], reveal: 0.75, push: [1.1, 2.2], type: [1.3, 2.2], cursorIn: [2.0, 2.7], press: 2.85,
+        loaded: 3.9, toOption: [4.35, 4.8], pick: 5.05, land: 5.6, montage: 6.3, beat: 0.62, outro: 8.2,
+      },
+      pages: [FIRST, READING, RECEITAS, VIAJE],
+      captions: [
+        [1.3, 2.8, "Name your page."],
+        [2.85, 5.0, "Ask for an *icon."],
+        [5.05, 6.25, "Pick. *Done."],
+        [6.3, 8.15, "Every page. / *Any language."],
+      ],
+    },
+    8: {
+      times: {
+        stars: [0.03, 0.2, 0.3], reveal: 0.55, push: [0.85, 1.8], type: [1.0, 1.7], cursorIn: [1.5, 2.1], press: 2.2,
+        loaded: 3.0, toOption: [3.3, 3.7], pick: 3.9, land: 4.4, montage: 5.0, beat: 0.5, outro: 6.45,
+      },
+      pages: [FIRST, READING, RECEITAS, VIAJE],
+      captions: [
+        [1.0, 2.15, "Name your page."],
+        [2.2, 3.85, "Ask for an *icon."],
+        [3.9, 4.95, "Pick. *Done."],
+        [5.0, 6.4, "Every page. / *Any language."],
+      ],
+    },
+  };
+  const params = new URLSearchParams(location.search);
+
+  // The frames, picked with ?format=4x5 or ?format=1x1 (wide is the default). `focus` is the point
+  // of the page the camera settles on and `cut` the cut it plays unless ?cut says otherwise. The two
+  // feed shapes are meant for a GIF, so they default to a short cut and the lite look.
+  const FORMATS = {
+    wide: { name: "16:9", cut: 15, w: 1920, h: 1080, zoom: 2.6, focus: [905, 258], cursorFrom: [1290, 430], body: 470,
+      caption: { bottom: 84, size: 68 }, logoY: 420, wordY: 590, tagY: 730, sparkle: { y: 500, rx: [640, 220], ry: [330, 90] } },
+    "4x5": { name: "4:5", cut: 8, w: 1080, h: 1350, zoom: 2.4, focus: [896, 318], cursorFrom: [1090, 460], body: 340,
+      caption: { bottom: 120, size: 84, stacked: true }, logoY: 520, wordY: 700, tagY: 850, sparkle: { y: 640, rx: [380, 100], ry: [450, 90] } },
+    "1x1": { name: "square", cut: 10, w: 1080, h: 1080, zoom: 2.4, focus: [896, 287], cursorFrom: [1090, 460], body: 340,
+      caption: { bottom: 70, size: 64 }, logoY: 380, wordY: 545, tagY: 690, sparkle: { y: 500, rx: [380, 100], ry: [370, 70] } },
+  };
+  const FORMAT = FORMATS[params.get("format")] ?? FORMATS.wide;
+  const FEED = FORMAT !== FORMATS.wide;
+  const W = FORMAT.w, H = FORMAT.h;
+  // The lite look keeps a GIF small: flat fills in place of gradients, no trails or blur, and a
+  // camera that holds still once it is in, so few pixels change from frame to frame.
+  const LITE = params.has("lite") ? params.get("lite") !== "0" : FEED;
+  const DURATION = params.get("cut") in CUTS ? Number(params.get("cut")) : FORMAT.cut;
+  const { times: T, pages: PAGES, captions: CAPTIONS } = CUTS[DURATION];
+  // When each page takes over the header: the first on landing, the rest on the montage beats.
+  const starts = PAGES.map((_, i) => (i === 0 ? T.land : T.montage + (i - 1) * T.beat));
+
+  const STARS = `<svg viewBox="-10 -10 20 20">
+    <path d="M-2,-6 C-1,-0.5 -0.5,0 5,1.5 C-0.5,3 -1,3.5 -2,9 C-3,3.5 -3.5,3 -9,1.5 C-3.5,0 -3,-0.5 -2,-6Z"/>
+    <path d="M6,-9.5 C6.4,-7 6.6,-6.8 9.5,-6 C6.6,-5.2 6.4,-5 6,-2.5 C5.6,-5 5.4,-5.2 2.5,-6 C5.4,-6.8 5.6,-7 6,-9.5Z"/>
+    <path d="M6.5,4 C6.8,5.8 7,6 9,6.5 C7,7 6.8,7.2 6.5,9 C6.2,7.2 6,7 4,6.5 C6,6 6.2,5.8 6.5,4Z"/></svg>`;
+
+  // Build the static parts.
+  const stage = $("stage"), view = $("view"), world = $("world");
+  const sizes = { w: W, h: H, body: FORMAT.body, "caption-bottom": FORMAT.caption.bottom, "caption-size": FORMAT.caption.size,
+    "logo-y": FORMAT.logoY, "word-y": FORMAT.wordY, "tag-y": FORMAT.tagY };
+  for (const [name, value] of Object.entries(sizes)) stage.style.setProperty(`--${name}`, `${value}px`);
+  document.body.classList.toggle("feed", FEED);
+  document.body.classList.toggle("lite", LITE);
+  $("spark").innerHTML = STARS;
+  $("intro").innerHTML = STARS;
+  const sparkStars = [...$("spark").querySelectorAll("path")];
+  const introStars = [...$("intro").querySelectorAll("path")];
+  {
+    const r = random(7);
+    $("sidebar").innerHTML = `<div class="side-row" style="margin-bottom:14px"><div class="bar" style="width:22px;height:22px"></div><div class="bar" style="width:110px"></div></div>` +
+      Array.from({ length: 11 }, () => `<div class="side-row"><div class="doc"></div><div class="bar" style="width:${60 + Math.round(r() * 100)}px"></div></div>`).join("");
+  }
+  $("body").innerHTML = FIRST.bars.map(() => `<div class="bar"></div>`).join("");
+  const bars = [...$("body").children];
+  $("options").innerHTML = OPTIONS.map((e) => `<span class="option emoji">${e}</span>`).join("");
+  const options = [...$("options").children];
+  $("wordmark").innerHTML = [..."Notion Icon AI"].map((c) => `<span>${c}</span>`).join("");
+  const letters = [...$("wordmark").children];
+
+  function make(className, text = "") {
+    const node = document.createElement("div");
+    node.className = `fx ${className}`;
+    node.textContent = text;
+    $("fxLayer").append(node);
+    return node;
+  }
+  const ghosts = [0, 1, 2, 3].map(() => make("flyer emoji", FIRST.icon));
+  const flyer = make("flyer emoji", FIRST.icon);
+  const candidates = CANDIDATES.map((e) => make("cand emoji", e));
+  const bits = Array.from({ length: 16 }, (_, i) => {
+    const node = make("bit");
+    node.style.background = i % 3 ? "var(--gold)" : "#fff";
+    return node;
+  });
+  const twinkles = Array.from({ length: 12 }, (_, i) => {
+    const r = random(40 + i);
+    const node = document.createElement("div");
+    const size = 14 + r() * 26;
+    const angle = (i / 12) * Math.PI * 2 + r();
+    node.className = "twinkle";
+    Object.assign(node.style, { width: `${size}px`, height: `${size}px`,
+      left: `${W / 2 + Math.cos(angle) * (FORMAT.sparkle.rx[0] + r() * FORMAT.sparkle.rx[1]) - size / 2}px`,
+      top: `${FORMAT.sparkle.y + Math.sin(angle) * (FORMAT.sparkle.ry[0] + r() * FORMAT.sparkle.ry[1]) - size / 2}px` });
+    $("twinkles").append(node);
+    return { node, phase: r() * 6 };
+  });
+
+  // Positions in world coordinates. offsetLeft/Top ignore transforms, so the camera does not skew them.
+  function at(node) {
+    let x = 0, y = 0;
+    for (let n = node; n && n !== world; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; }
+    return { x, y, w: node.offsetWidth, h: node.offsetHeight, cx: x + node.offsetWidth / 2, cy: y + node.offsetHeight / 2 };
+  }
+  const suggestBox = at($("suggest"));
+  $("popover").style.left = `${suggestBox.x}px`;
+  $("popover").style.top = `${suggestBox.y + suggestBox.h + 6}px`;
+  const ICON = at($("slot"));
+  const SUGGEST = { x: suggestBox.cx + 8, y: suggestBox.cy + 3 };
+  const OPTION = at(options[0]);
+  const CURSOR_FROM = { x: FORMAT.cursorFrom[0], y: FORMAT.cursorFrom[1] };
+
+  const move = (node, x, y, rest = "") => { node.style.transform = `translate(${x}px, ${y}px) ${rest}`; };
+  let shownTitle = null, shownIcon = null, shownCaption = null, captionWords = [];
+
+  function render(t) {
+    const live = t >= 0;
+
+    // Camera: a wide shot of the window, then a push into the page header, with a kick on every beat.
+    const lastBeat = Math.max(...starts.filter((s) => s <= t), -9);
+    const push = inOut(seg(t, ...T.push));
+    let zoom = lerp(1, FORMAT.zoom, push);
+    // The feed frames are filled edge to edge already, so the slow push is gentler there.
+    if (!LITE) zoom = (zoom + (FEED ? 0.05 : 0.16) * seg(t, T.push[1], T.outro)) * (1 + 0.035 * Math.exp(-8 * (t - lastBeat)));
+    const fx = lerp(960, FORMAT.focus[0], push) + (LITE ? 0 : 5 * Math.sin(t * 0.9) * push);
+    const fy = lerp(540, FORMAT.focus[1], push);
+    world.style.transform = `translate(${W / 2 - fx * zoom}px, ${H / 2 - fy * zoom}px) scale(${zoom})`;
+    const toStage = (p) => ({ x: W / 2 + (p.x - fx) * zoom, y: H / 2 + (p.y - fy) * zoom });
+
+    // Intro: the three stars of the logo, then the page opens out of them like an iris.
+    const leave = seg(t, T.reveal, T.reveal + 0.45);
+    $("intro").style.opacity = live ? 1 - leave : 0;
+    $("intro").style.transform = `scale(${1 + 5 * inCubic(leave)}) rotate(${40 * inCubic(leave)}deg)`;
+    introStars.forEach((star, i) => {
+      const dt = t - T.stars[i];
+      star.style.transform = `scale(${spring(dt, 13, 6)}) rotate(${-140 * (1 - outExpo(seg(dt, 0, 0.7)))}deg)`;
+      star.style.opacity = dt > 0 ? 1 : 0;
+    });
+    const iris = t < T.land ? 1300 * inOut(seg(t, T.reveal - 0.05, T.reveal + 0.6)) : 2000 * (1 - outCubic(seg(t, T.outro, T.outro + 0.33)));
+    const irisAt = t < T.land ? { x: W / 2, y: H / 2 } : toStage({ x: ICON.cx, y: ICON.cy });
+    view.style.clipPath = `circle(${iris}px at ${irisAt.x}px ${irisAt.y}px)`;
+    $("vignette").style.opacity = seg(t, T.push[0], T.push[0] + 0.6) * (1 - seg(t, T.outro - 0.1, T.outro + 0.15));
+
+    // Which page the header shows, and how far into its beat it is.
+    const index = Math.max(0, starts.findLastIndex((s) => s <= t));
+    const page = PAGES[index];
+    const since = t - starts[index];
+    const until = index < PAGES.length - 1 ? seg(t, starts[index + 1] - 0.1, starts[index + 1]) : 0;
+
+    // Title: typed in once, then swapped on the montage beats.
+    const typed = Math.floor(seg(t, ...T.type) * FIRST.title.length);
+    const caretOn = t > T.type[0] - 0.3 && t < T.cursorIn[1] && (typed < FIRST.title.length ? true : Math.floor(t * 2.6) % 2 === 0);
+    const titleKey = index === 0 ? `0:${typed}:${caretOn}` : `${index}`;
+    if (titleKey !== shownTitle) {
+      shownTitle = titleKey;
+      const text = index === 0 ? FIRST.title.slice(0, typed) : page.title;
+      const caret = `<span class="caret" style="opacity:${caretOn ? 1 : 0}"></span>`;
+      $("title").innerHTML = text || index ? `${text}${index ? "" : caret}` : `${caret}<span class="ph">New page</span>`;
+    }
+    const titleIn = index === 0 ? 1 : spring(since, 16, 9);
+    $("title").style.transform = `translateY(${(1 - titleIn) * 34 - 26 * inCubic(until)}px)`;
+    $("title").style.opacity = (index === 0 ? 1 : seg(since, 0, 0.08)) * (1 - until);
+    $("title").style.filter = until > 0 && !LITE ? `blur(${6 * until}px)` : "none";
+
+    // Icon slot: empty until the pick lands, then it squashes in and swaps with the titles.
+    const icon = t >= T.land ? page.icon : "";
+    if (icon !== shownIcon) { shownIcon = icon; $("slot").textContent = icon; }
+    const pop = index === 0 ? 1 + 0.3 * Math.exp(-8 * since) * Math.cos(20 * since) : 0.35 + 0.65 * spring(since, 17, 7);
+    const tilt = index === 0 ? 0 : -28 * (1 - outExpo(seg(since, 0, 0.3)));
+    $("slot").style.transform = `scale(${pop * (1 - 0.4 * inCubic(until))}) rotate(${tilt}deg)`;
+    $("slot").style.opacity = 1 - until;
+    bars.forEach((bar, i) => {
+      const from = PAGES[Math.max(0, index - 1)].bars[i];
+      bar.style.width = `${lerp(from, page.bars[i], index === 0 ? 1 : outCubic(seg(since, 0, 0.28)))}%`;
+    });
+
+    // The buttons above the title, and the loading state of ours.
+    const loading = t >= T.press && t < T.loaded;
+    const pressed = Math.sin(Math.PI * seg(t, T.press, T.press + 0.2));
+    $("controls").style.opacity = seg(t, T.cursorIn[0] - 0.15, T.cursorIn[0] + 0.15) * (1 - seg(t, T.pick + 0.05, T.pick + 0.3));
+    $("suggest").style.background = t > T.cursorIn[1] - 0.12 ? "rgba(255,255,255,.07)" : "none";
+    $("suggest").style.transform = `scale(${1 - 0.07 * pressed})`;
+    $("shine").style.opacity = loading ? 1 : 0;
+    $("shine").style.transform = `translateX(${-100 + 200 * (((t - T.press) / 0.75) % 1)}%)`;
+    sparkStars.forEach((star, i) => {
+      const wave = loading ? 0.5 - 0.5 * Math.cos(2 * Math.PI * ((t - T.press) / 0.9 - i / 3)) : 1;
+      star.style.transform = `scale(${lerp(0.25, 1, wave)})`;
+      star.style.opacity = lerp(0.35, 1, wave);
+    });
+
+    // While it loads, candidate icons spiral into the button, as if being weighed.
+    candidates.forEach((node, i) => {
+      const r = random(100 + i);
+      const begin = T.press + 0.05 + (i / candidates.length) * (T.loaded - T.press - 0.5);
+      const p = seg(t, begin, begin + 0.5);
+      const angle = r() * Math.PI * 2 + 2.4 * p;
+      const radius = (150 + r() * 90) * (1 - inOut(p));
+      move(node, SUGGEST.x - 26 + Math.cos(angle) * radius * 1.5, SUGGEST.y + Math.sin(angle) * radius * 0.75,
+        `scale(${lerp(1.5, 0.2, p)}) rotate(${(1 - p) * 60}deg)`);
+      node.style.opacity = p > 0 && p < 1 ? Math.sin(Math.PI * p) ** 0.6 * 0.95 : 0;
+    });
+
+    // Popover: springs out of the button, options pop one after another, closes on the pick.
+    const open = t - T.loaded;
+    const closing = seg(t, T.pick + 0.04, T.pick + 0.2);
+    $("popover").style.opacity = seg(open, 0, 0.08) * (1 - closing);
+    $("popover").style.transform = `scale(${(0.7 + 0.3 * spring(open, 16, 8)) * (1 - 0.06 * closing)})`;
+    options.forEach((option, i) => {
+      option.style.transform = `scale(${spring(open - 0.07 - i * 0.075, 17, 7)})`;
+      option.style.background = i === 0 && t > T.toOption[1] - 0.1 ? "rgba(255,255,255,.08)" : "none";
+      option.style.opacity = i === 0 && t >= T.pick ? 0 : 1;
+    });
+
+    // The pick flies up to the icon slot along an arc, trailing copies of itself.
+    const flight = (time) => {
+      const p = inOut(seg(time, T.pick, T.land));
+      const bend = { x: (OPTION.cx + ICON.cx) / 2 + 150, y: ICON.cy - 30 };
+      const q = 1 - p;
+      return { p, x: q * q * OPTION.cx + 2 * q * p * bend.x + p * p * ICON.cx, y: q * q * OPTION.cy + 2 * q * p * bend.y + p * p * ICON.cy };
+    };
+    const flying = t >= T.pick && t < T.land;
+    [flyer, ...ghosts].forEach((node, i) => {
+      const f = flight(t - i * 0.035);
+      move(node, f.x, f.y, `scale(${lerp(30 / 78, 1, f.p)}) rotate(${-24 * Math.sin(Math.PI * f.p)}deg)`);
+      node.style.opacity = flying ? (i ? (LITE ? 0 : 0.3 - i * 0.06) : 1) : 0;
+    });
+
+    // Every landing throws sparks, a shockwave and a wash of gold.
+    const hit = t - lastBeat;
+    const r = random(900 + index);
+    bits.forEach((bit, i) => {
+      const p = seg(hit, 0, 0.62);
+      const angle = (i / bits.length) * Math.PI * 2 + r();
+      const reach = (58 + r() * 70) * outCubic(p);
+      move(bit, ICON.cx + Math.cos(angle) * reach, ICON.cy + Math.sin(angle) * reach + 34 * p * p,
+        `scale(${(0.7 + r()) * (1 - p)}) rotate(${p * 200}deg)`);
+      bit.style.opacity = hit >= 0 && p < 1 ? 1 : 0;
+    });
+    const wave = seg(hit, 0, 0.45);
+    move($("ring"), ICON.cx, ICON.cy, `scale(${lerp(0.8, 3, outCubic(wave))})`);
+    $("ring").style.opacity = hit >= 0 ? (1 - wave) * 0.9 : 0;
+    $("ring").style.borderWidth = `${3 * (1 - wave)}px`;
+    move($("glow"), ICON.cx, ICON.cy);
+    $("glow").style.opacity = hit >= 0 ? 0.6 * Math.exp(-4.5 * hit) : 0;
+
+    // Cursor: in to the button, press, down to the first option, press, gone.
+    const a = inOut(seg(t, ...T.cursorIn)), b = inOut(seg(t, ...T.toOption));
+    const cx = lerp(lerp(CURSOR_FROM.x, SUGGEST.x, a), OPTION.cx + 6, b) + 26 * Math.sin(Math.PI * a) * (b ? 0 : 1);
+    const cy = lerp(lerp(CURSOR_FROM.y, SUGGEST.y, a), OPTION.cy + 8, b);
+    const tap = Math.max(pressed, Math.sin(Math.PI * seg(t, T.pick - 0.05, T.pick + 0.15)));
+    move($("cursor"), cx, cy, `scale(${0.8 - 0.1 * tap})`);
+    $("cursor").style.opacity = seg(t, T.cursorIn[0], T.cursorIn[0] + 0.2) * (1 - seg(t, T.pick + 0.12, T.pick + 0.4));
+    const clickAt = t >= T.pick ? T.pick : T.press;
+    const ripple = seg(t, clickAt, clickAt + 0.4);
+    move($("click"), cx, cy, `scale(${lerp(0.4, 2.2, outCubic(ripple))})`);
+    $("click").style.opacity = t >= T.press && ripple < 1 ? 0.8 * (1 - ripple) : 0;
+
+    // Captions: words rise out of a mask, one after another.
+    const caption = CAPTIONS.find(([from, to]) => t >= from && t < to);
+    if (caption !== shownCaption) {
+      shownCaption = caption;
+      // "/" marks where a caption breaks in a frame that stacks it, "*" a word in gold.
+      $("caption").innerHTML = caption ? caption[2].split(" ").map((word) => word === "/" ? (FORMAT.caption.stacked ? "<br>" : "") :
+        `<span class="w${word[0] === "*" ? " gold" : ""}"><span>${word.replace("*", "")}</span></span>`).join("") : "";
+      captionWords = [...$("caption").querySelectorAll(".w > span")];
+    }
+    if (caption) {
+      const out = inCubic(seg(t, caption[1] - 0.18, caption[1]));
+      captionWords.forEach((word, i) => {
+        word.style.transform = `translateY(${110 * (1 - outExpo(seg(t - caption[0] - i * 0.07, 0, 0.5))) - 110 * out}%)`;
+      });
+    }
+
+    // Outro: the iris closes on the icon, the logo carries on from there to the centre.
+    const end = t - (T.outro + 0.25);
+    const from = toStage({ x: ICON.cx, y: ICON.cy });
+    const travel = outExpo(seg(end, 0, 0.55));
+    $("outro").style.opacity = end > 0 ? 1 : 0;
+    move($("logo"), lerp(from.x, W / 2, travel), lerp(from.y, FORMAT.logoY, travel), `scale(${spring(end, 13, 6)}) rotate(${-12 * (1 - travel)}deg)`);
+    $("halo").style.opacity = seg(end, 0.1, 0.7);
+    $("halo").style.transform = `scale(${0.6 + 0.4 * outCubic(seg(end, 0.1, 0.9)) + 0.03 * Math.sin(t * 3)})`;
+    letters.forEach((letter, i) => {
+      const dt = end - 0.2 - i * 0.022;
+      letter.style.transform = `translateY(${(1 - spring(dt, 14, 8)) * 70}px)`;
+      letter.style.opacity = seg(dt, 0, 0.1);
+    });
+    $("tagline").style.opacity = seg(end, 0.62, 0.9);
+    $("tagline").style.transform = `translateY(${(1 - outCubic(seg(end, 0.62, 1))) * 18}px)`;
+    twinkles.forEach(({ node, phase }, i) => {
+      const glint = 0.5 + 0.5 * Math.sin(t * 5 + phase);
+      node.style.transform = `scale(${spring(end - 0.25 - i * 0.03, 14, 6) * lerp(0.45, 1, glint)}) rotate(${t * 20 + phase * 40}deg)`;
+      node.style.opacity = lerp(0.3, 1, glint);
+    });
+  }
+
+  // Playback.
+  let clock = -PREROLL, playing = false, startedAt = 0;
+  function fit() {
+    const scale = Math.min(innerWidth / W, innerHeight / H);
+    stage.style.transform = `translate(${(-W / 2) * scale}px, ${(-H / 2) * scale}px) scale(${scale})`;
+    Object.assign($("guide").style, { left: `${(innerWidth - W * scale) / 2}px`, top: `${(innerHeight - H * scale) / 2}px`,
+      width: `${W * scale}px`, height: `${H * scale}px` });
+  }
+  function play(from = clock) {
+    clock = from >= DURATION ? -PREROLL : from;
+    startedAt = performance.now() - clock * 1000;
+    playing = true;
+    $("start").hidden = true;
+    document.body.classList.add("playing");
+  }
+  function pause() {
+    playing = false;
+    document.body.classList.remove("playing");
+  }
+  function frame(now) {
+    if (playing) {
+      clock = (now - startedAt) / 1000;
+      if (clock >= DURATION) { clock = DURATION; pause(); }
+    }
+    render(clock);
+    requestAnimationFrame(frame);
+  }
+  addEventListener("resize", fit);
+  addEventListener("keydown", (event) => {
+    const key = event.key.toLowerCase();
+    if (key === " ") { event.preventDefault(); playing ? pause() : play(); }
+    else if (key === "r") play(-PREROLL);
+    else if (key === "f") document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (key === "arrowright" || key === "arrowleft") {
+      pause();
+      $("start").hidden = true;
+      clock = Math.max(0, Math.min(DURATION, clock + (key === "arrowright" ? 1 : -1) / 30));
+    }
+  });
+  // ?t=5.2 opens on a still of that moment, for checking a frame.
+  const still = params.get("t");
+  if (still !== null) { clock = Number(still); $("start").hidden = true; }
+  $("cutName").textContent = `${DURATION} second cut, ${FORMAT.name}${LITE ? ", lite" : ""}`;
+  fit();
+  requestAnimationFrame(frame);
+</script>

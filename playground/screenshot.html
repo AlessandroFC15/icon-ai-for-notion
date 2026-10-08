@@ -1,0 +1,315 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Notion Icon AI: store screenshots</title>
+<style>
+  /* Concepts for the Chrome Web Store screenshot, each on a fixed 1280x800 stage. 1 to 5 carry
+     localized copy; 6 to 10 are global ones, shown in every language that has no screenshot of its own.
+     With no parameters the page stacks them all for comparison. ?shot=1 to ?shot=10 shows one
+     alone, ready to capture at device scale 1 (see the command at the bottom of this file).
+     ?tile=marquee is the marquee promo tile, on its own 1400x560 stage.
+     ?tile=small is the small promo tile, the same layout cut down to a 440x280 stage.
+     ?lang=pt or ?lang=es picks the copy; languages without copy fall back to English. */
+  :root { --gold: #f5b800; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #000; }
+  body { font: 14px/1.5 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body.all { padding: 40px 0; }
+  body.all .stage { margin: 0 auto 56px; }
+  .tag { width: 1280px; margin: 0 auto 12px; font-size: 22px; color: rgba(255,255,255,.6); }
+  .tag b { margin-right: 10px; padding: 2px 12px; border-radius: 999px; background: var(--gold); color: #191919; }
+  .emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; color: #000; }
+
+  /* Notion's palette in each theme, for the mock and the extension's popover. */
+  .dark { --page: #191919; --text: rgba(255,255,255,.81); --muted: rgba(255,255,255,.46); --faint: rgba(255,255,255,.07);
+    --bar: rgba(255,255,255,.08); --line: rgba(255,255,255,.1); --pop: #252525; --pop-text: rgba(255,255,255,.6);
+    --hover: rgba(255,255,255,.08); --cursor: #fff; --cursor-edge: #000; }
+  .light { --page: #fff; --text: rgb(55,53,47); --muted: rgba(55,53,47,.5); --faint: rgba(55,53,47,.06);
+    --bar: rgba(55,53,47,.08); --line: rgba(55,53,47,.12); --pop: #fff; --pop-text: rgba(55,53,47,.65);
+    --hover: rgba(55,53,47,.08); --cursor: #000; --cursor-edge: #fff; }
+
+  .stage { position: relative; width: 1280px; height: 800px; overflow: hidden; background: #0b0b0b; color: #fff; }
+  .stage > * { position: absolute; }
+  .halo { left: 640px; top: 470px; width: 1500px; height: 1100px; margin: -550px 0 0 -750px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(245,184,0,.28), transparent); }
+  .h { left: 0; right: 0; margin: 0; text-align: center; font-size: 58px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+  .h b { font-weight: inherit; color: var(--gold); }
+  .sub { left: 0; right: 0; text-align: center; font-size: 25px; color: rgba(255,255,255,.62); }
+  .footer { left: 120px; right: 120px; top: 716px; height: 84px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
+  .brand img { width: 30px; height: 30px; }
+  .disclaimer { font-size: 13px; color: rgba(255,255,255,.46); }
+
+  /* Notion mock. Everything inside .mock uses Notion's and the extension's real measurements;
+     each card sets a zoom on it so the button reads in a store thumbnail. */
+  .card { overflow: hidden; border-radius: 20px; background: var(--page); color: var(--text); border: 1px solid var(--line);
+    box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+  .mock { position: relative; }
+  .topbar { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-bottom: 1px solid var(--faint); }
+  .doc { width: 12px; height: 14px; border-radius: 2.5px; border: 1.5px solid var(--muted); }
+  .pg { position: absolute; }
+  .slot { width: 78px; height: 78px; margin: 0 0 8px -4px; font-size: 78px; line-height: 78px; display: flex; align-items: center; justify-content: center; }
+  .controls { display: flex; gap: 2px; margin: 0 0 4px -6px; color: var(--muted); white-space: nowrap; }
+  .btn { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 6px; border-radius: 6px; }
+  .btn.hot { background: var(--faint); }
+  .glyph { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor; opacity: .8; }
+  .glyph.cover { height: 11px; border-radius: 3px; }
+  .spark { display: inline-flex; width: 14px; height: 14px; }
+  .spark svg { width: 100%; height: 100%; overflow: visible; }
+  .spark path { fill: var(--gold); }
+  .title { height: 48px; font-size: 40px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+  .caret { display: inline-block; width: 2px; height: 40px; margin-left: 2px; vertical-align: -6px; background: var(--text); }
+  .body { margin-top: 22px; display: grid; gap: 14px; }
+  .bar { height: 12px; border-radius: 6px; background: var(--bar); }
+  .cursor { position: absolute; width: 17px; height: 24px; zoom: .7; }
+  .cursor path { fill: var(--cursor); stroke: var(--cursor-edge); }
+
+  /* The extension's popover, same measurements as extension/content.css, placed as popover.js
+     places it: 6px under the button, left edges aligned. */
+  .popover { position: absolute; left: 0; top: 34px; padding: 8px; border-radius: 10px; background: var(--pop);
+    color: var(--pop-text); border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(0,0,0,.25); font-size: 12px; line-height: 1.4; }
+  .row { display: flex; gap: 4px; }
+  .option { position: relative; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 30px; line-height: 1; }
+  .option.hot { background: var(--hover); }
+
+  /* 2: before and after. */
+  .label { font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.46); }
+  .label.gold { color: var(--gold); }
+  .card.after { border-color: rgba(245,184,0,.55); box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 60px rgba(245,184,0,.16); }
+  .arrow { left: 612px; top: 408px; width: 56px; height: 56px; border-radius: 50%; background: var(--gold); color: #191919;
+    display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+
+  /* 3: a gallery of pages that already have their icon. */
+  .grid { left: 120px; top: 206px; width: 1040px; height: 490px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .tile { padding: 28px; border-radius: 16px; background: var(--page); border: 1px solid var(--line); color: var(--text); }
+  .tile .emoji { font-size: 60px; line-height: 60px; }
+  .tile .name { margin-top: 14px; font-size: 26px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+  .tile .body { margin-top: 16px; gap: 12px; }
+
+  /* 4: three steps. */
+  .step { top: 596px; width: 373px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 22px; font-weight: 600; }
+  .num { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); color: #191919; display: flex;
+    align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+
+  /* 5: gold field, light Notion, text beside the mock. */
+  .stage.gold { background: radial-gradient(circle at 75% 45%, #ffd23d, var(--gold) 60%); color: #191919; }
+  .gold .h { left: 80px; right: auto; top: 150px; text-align: left; font-size: 84px; line-height: 1.02; }
+  .gold .sub { left: 80px; right: auto; top: 348px; width: 430px; text-align: left; font-size: 26px; line-height: 1.35; color: rgba(25,25,25,.78); }
+  .gold .card { border: 0; box-shadow: 0 30px 80px rgba(90,55,0,.4); }
+  .gold .footer { top: 620px; width: 440px; height: auto; display: block; }
+  .gold .disclaimer { margin-top: 14px; color: rgba(25,25,25,.6); }
+  /* A spotlight on the extension's button: a gold ring the real button does not have. */
+  .spot .btn.hot { background: rgba(245,184,0,.16); color: var(--text); font-weight: 600;
+    box-shadow: 0 0 0 1.5px var(--gold), 0 0 0 5px rgba(245,184,0,.22); }
+
+  /* 6 to 10: global. No marketing copy, so it reads in any language. */
+  .stage.cream { background: #f3f0e7; color: #191919; }
+  .stage.tint { background: radial-gradient(circle at 50% 50%, #fff6d1, #f9e6a0 75%); color: #191919; }
+  .onlight .card { border: 0; box-shadow: 0 30px 80px rgba(70,50,10,.18); }
+  .onlight .disclaimer, .bleed .disclaimer { color: rgba(25,25,25,.5); }
+  .stage.bleed { background: #fff; color: rgb(55,53,47); }
+  .bleed .disclaimer { left: 40px; bottom: 36px; }
+  .bleed .brand { right: 32px; bottom: 24px; padding: 10px 20px 10px 12px; border-radius: 999px; background: #191919; color: #fff; }
+  .global .brand { left: 0; right: 0; top: 46px; justify-content: center; gap: 16px; font-size: 40px; font-weight: 800; letter-spacing: -.02em; }
+  .global .brand img { width: 52px; height: 52px; }
+  .global .disclaimer { left: 0; right: 0; top: 738px; margin: 0; text-align: center; }
+
+  /* Marquee promo tile. Only the brand for text; the card bleeds off the bottom edge. */
+  .stage.marquee { width: 1400px; height: 560px; background: radial-gradient(circle at 50% 70%, #ffd23d, var(--gold) 60%); }
+  .marquee .brand { left: 0; right: 0; top: 30px; justify-content: center; gap: 12px; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+  .marquee .brand img { width: 40px; height: 40px; }
+
+  /* Small promo tile. The marquee's layout at 440x280. */
+  .stage.promo { width: 440px; height: 280px; background: radial-gradient(circle at 50% 70%, #ffd23d, var(--gold) 60%); }
+  .promo .brand { left: 0; right: 0; top: 17px; justify-content: center; gap: 9px; font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
+  .promo .brand img { width: 32px; height: 32px; }
+  .promo .card { border-radius: 14px; box-shadow: 0 14px 40px rgba(90,55,0,.4); }
+</style>
+
+<script>
+  // suggestIcon matches extension/strings.js; addIcon and addCover are Notion's own labels.
+  // A <b> in a headline is the part set in gold.
+  const STRINGS = {
+    en: {
+      title: "Trip to Japan",
+      addIcon: "Add icon",
+      suggestIcon: "Suggest icon",
+      addCover: "Add cover",
+      disclaimer: "Not made by, affiliated with, or endorsed by Notion Labs, Inc.",
+      heroHeadline: "The <b>right icon</b> for every Notion page.",
+      heroSubline: "Suggested from the page title, in one click.",
+      splitHeadline: "From no icon to the <b>right icon</b>, in one click.",
+      before: "Before",
+      after: "After",
+      galleryHeadline: "Any Notion page. A <b>fitting icon</b>.",
+      gallerySubline: "Suggested from the page title, in one click.",
+      pages: [["🗾", "Trip to Japan"], ["📈", "Q4 Marketing Plan"], ["🥗", "Weekly Meal Prep"],
+        ["📚", "Reading List"], ["🏋️", "Workout Log"], ["💍", "Wedding Budget"]],
+      stepsHeadline: "Title in. <b>Icon out.</b>",
+      steps: ["Give the page a title", "Click Suggest icon", "Pick your icon"],
+      goldHeadline: "Type a title.<br>Get an icon.",
+      goldSubline: "Notion Icon AI suggests a page icon from the page title. One click sets it.",
+    },
+  };
+  const EMOJIS = ["🇯🇵", "✈️", "🍣"];
+
+  const params = new URLSearchParams(location.search);
+  const s = STRINGS[params.get("lang")] ?? STRINGS.en;
+  document.documentElement.lang = STRINGS[params.get("lang")] ? params.get("lang") : "en";
+
+  const SPARK = `<span class="spark"><svg viewBox="-10 -10 20 20">
+    <path d="M-2,-6 C-1,-0.5 -0.5,0 5,1.5 C-0.5,3 -1,3.5 -2,9 C-3,3.5 -3.5,3 -9,1.5 C-3.5,0 -3,-0.5 -2,-6Z"/>
+    <path d="M6,-9.5 C6.4,-7 6.6,-6.8 9.5,-6 C6.6,-5.2 6.4,-5 6,-2.5 C5.6,-5 5.4,-5.2 2.5,-6 C5.4,-6.8 5.6,-7 6,-9.5Z"/>
+    <path d="M6.5,4 C6.8,5.8 7,6 9,6.5 C7,7 6.8,7.2 6.5,9 C6.2,7.2 6,7 4,6.5 C6,6 6.2,5.8 6.5,4Z"/></svg></span>`;
+  const cursor = (left, top) => `<svg class="cursor" style="left:${left}px;top:${top}px" viewBox="0 0 17 24">
+    <path d="M1 1v19l5-4.6 3.2 7.4 3-1.3-3.2-7.3H16z" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+
+  const popover = () => `<div class="popover"><div class="row">
+      ${EMOJIS.map((emoji, i) => `<span class="option emoji ${i ? "" : "hot"}">${emoji}${i ? "" : cursor(50, 48)}</span>`).join("")}
+    </div></div>`;
+
+  // The row above the title. `state` is "idle", "hover" (cursor on the button) or "open" (popover showing).
+  const controls = (state, cover = true) => `<div class="controls">
+      <span class="btn"><span class="glyph"></span>${s.addIcon}</span>
+      <span class="btn ${state === "idle" ? "" : "hot"}">${SPARK}${s.suggestIcon}${state === "hover" ? cursor(118, 24) : ""}${state === "open" ? popover() : ""}</span>
+      ${cover ? `<span class="btn"><span class="glyph cover"></span>${s.addCover}</span>` : ""}
+    </div>`;
+  const bars = (width, ...percents) => `<div class="body" style="width:${width}px">
+      ${percents.map((p) => `<div class="bar" style="width:${p}%"></div>`).join("")}</div>`;
+  const topbar = () => `<div class="topbar"><span class="doc"></span>${s.title}</div>`;
+  const footer = (inset = 120) => `<div class="footer" style="left:${inset}px;right:${inset}px">
+      <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
+      <div class="disclaimer">${s.disclaimer}</div></div>`;
+
+  // Brand on top, one large page card, disclaimer below, and no marketing copy.
+  const globalShot = (stage, theme, halo = false) => `<div class="stage global spot ${stage}">
+      ${halo ? `<div class="halo"></div>` : ""}
+      <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
+      <div class="card ${theme}" style="left:140px;top:150px;width:1000px;height:540px"><div class="mock" style="zoom:2.4">
+        ${topbar()}
+        <div class="pg" style="left:60px;top:56px">${controls("open")}<div class="title">${s.title}</div>${bars(300, 100, 86, 58)}</div>
+      </div></div>
+      <div class="disclaimer">${STRINGS.en.disclaimer}</div>
+    </div>`;
+
+  const SHOTS = [
+    // 1: headline over one zoomed page, popover open.
+    `<div class="stage dark">
+      <div class="halo"></div>
+      <h1 class="h" style="top:50px">${s.heroHeadline}</h1>
+      <div class="sub" style="top:128px">${s.heroSubline}</div>
+      <div class="card" style="left:120px;top:206px;width:1040px;height:510px"><div class="mock" style="zoom:2">
+        ${topbar()}
+        <div class="pg" style="left:60px;top:52px">${controls("open")}<div class="title">${s.title}</div>${bars(400, 100, 86, 93, 58)}</div>
+      </div></div>
+      ${footer()}
+    </div>`,
+
+    // 2: the same page before and after.
+    `<div class="stage dark">
+      <h1 class="h" style="top:62px;font-size:50px">${s.splitHeadline}</h1>
+      <div class="label" style="left:122px;top:184px">${s.before}</div>
+      <div class="label gold" style="left:662px;top:184px">${s.after}</div>
+      <div class="card" style="left:120px;top:220px;width:500px;height:430px"><div class="mock" style="zoom:1.5">
+        <div class="pg" style="left:30px;top:82px">${controls("hover")}<div class="title">${s.title}</div>${bars(270, 100, 84, 93, 62)}</div>
+      </div></div>
+      <div class="card after" style="left:660px;top:220px;width:500px;height:430px"><div class="mock" style="zoom:1.5">
+        <div class="pg" style="left:30px;top:28px"><div class="slot emoji">${EMOJIS[0]}</div><div class="title">${s.title}</div>${bars(270, 100, 84, 93, 62)}</div>
+      </div></div>
+      <div class="arrow">→</div>
+      ${footer()}
+    </div>`,
+
+    // 3: many pages, each with the icon its title earned.
+    `<div class="stage dark">
+      <div class="halo"></div>
+      <h1 class="h" style="top:50px">${s.galleryHeadline}</h1>
+      <div class="sub" style="top:128px">${s.gallerySubline}</div>
+      <div class="grid">${s.pages.map(([emoji, name]) => `<div class="tile">
+        <div class="emoji">${emoji}</div><div class="name">${name}</div>${bars(277, 100, 78, 52)}</div>`).join("")}</div>
+      ${footer()}
+    </div>`,
+
+    // 4: the flow as three steps.
+    `<div class="stage dark">
+      <div class="halo"></div>
+      <h1 class="h" style="top:52px">${s.stepsHeadline}</h1>
+      <div class="card" style="left:60px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
+        <div class="pg" style="left:16px;top:70px">${controls("idle", false)}<div class="title">${s.title}<span class="caret"></span></div>${bars(240, 100, 84, 93, 70, 45)}</div>
+      </div></div>
+      <div class="card" style="left:453px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
+        <div class="pg" style="left:16px;top:70px">${controls("open", false)}<div class="title">${s.title}</div>${bars(240, 100, 84, 93, 70, 45)}</div>
+      </div></div>
+      <div class="card" style="left:846px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
+        <div class="pg" style="left:16px;top:16px"><div class="slot emoji">${EMOJIS[0]}</div><div class="title">${s.title}</div>${bars(240, 100, 84, 93, 70, 45)}</div>
+      </div></div>
+      ${s.steps.map((text, i) => `<div class="step" style="left:${60 + i * 393}px"><span class="num">${i + 1}</span>${text}</div>`).join("")}
+      ${footer(60)}
+    </div>`,
+
+    // 5: gold field, Notion in light mode, text beside the mock.
+    `<div class="stage gold spot">
+      <h1 class="h">${s.goldHeadline}</h1>
+      <div class="sub">${s.goldSubline}</div>
+      <div class="card light" style="left:580px;top:120px;width:760px;height:560px"><div class="mock" style="zoom:2.2">
+        ${topbar()}
+        <div class="pg" style="left:36px;top:54px">${controls("open")}<div class="title">${s.title}</div>${bars(280, 100, 86, 93, 58)}</div>
+      </div></div>
+      ${footer(80)}
+    </div>`,
+
+    // 6 to 9: the global layout on calmer backdrops. The mock's labels stay in English, the
+    // extension's fallback language.
+    globalShot("cream onlight", "light"),
+    globalShot("tint onlight", "light"),
+    globalShot("dark", "dark", true),
+    globalShot("dark", "light", true),
+
+    // 10: global, no card at all. The Notion page fills the frame.
+    `<div class="stage light bleed spot">
+      <div class="mock" style="left:0;top:0;width:427px;zoom:3">
+        ${topbar()}
+        <div class="pg" style="left:70px;top:60px">${controls("open")}<div class="title">${s.title}</div>${bars(290, 100, 86, 58)}</div>
+      </div>
+      <div class="disclaimer">${STRINGS.en.disclaimer}</div>
+      <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
+    </div>`,
+  ];
+
+  // Promo tiles, picked by name with ?tile= so renumbering the shots cannot move them.
+  const TILES = {
+    marquee: `<div class="stage gold spot marquee">
+      <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
+      <div class="card light" style="left:180px;top:104px;width:1040px;height:520px"><div class="mock" style="zoom:2.6">
+        ${topbar()}
+        <div class="pg" style="left:50px;top:50px">${controls("open")}<div class="title">${s.title}</div>${bars(300, 100, 86)}</div>
+      </div></div>
+    </div>`,
+    small: `<div class="stage gold spot promo">
+      <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
+      <div class="card light" style="left:24px;top:68px;width:392px;height:240px"><div class="mock" style="zoom:1.3">
+        ${topbar()}
+        <div class="pg" style="left:16px;top:46px">${controls("open", false)}<div class="title">${s.title}</div></div>
+      </div></div>
+    </div>`,
+  };
+
+  const NAMES = ["Hero", "Before / after", "Gallery", "Three steps", "Gold field", "Global: off-white",
+    "Global: pale gold", "Global: dark, dark card", "Global: dark, light card", "Global: full frame"];
+
+  const shot = TILES[params.get("tile")] ?? SHOTS[params.get("shot") - 1];
+  addEventListener("DOMContentLoaded", () => {
+    document.body.classList.toggle("all", !shot);
+    // The stacked view labels each concept; a single shot has no label, so captures stay clean.
+    document.body.innerHTML = shot ?? SHOTS.map((html, i) => `<div class="tag"><b>#${i + 1}</b>${NAMES[i]}</div>${html}`).join("");
+  });
+</script>
+<body></body>
+
+<!-- Capture one concept at exactly 1280x800 (a plain Retina screenshot would be 2560x1600):
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
+    --force-device-scale-factor=1 --window-size=1280,800 \
+    --screenshot=store-assets/screenshot-en.png "file://$PWD/playground/screenshot.html?shot=5&lang=en"
+  The marquee is the same command with --window-size=1400,560, ?tile=marquee and store-assets/marquee.png.
+  The small promo tile is the same command with --window-size=440,280, ?tile=small and store-assets/promo-small.png.
+-->
