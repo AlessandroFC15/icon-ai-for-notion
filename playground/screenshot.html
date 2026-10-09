@@ -8,7 +8,8 @@
      alone, ready to capture at device scale 1 (see the command at the bottom of this file).
      ?tile=marquee is the marquee promo tile, on its own 1400x560 stage.
      ?tile=small is the small promo tile, the same layout cut down to a 440x280 stage.
-     ?lang=pt or ?lang=es picks the copy; languages without copy fall back to English. */
+     ?lang=pt or ?lang=es picks the copy; languages without copy fall back to English.
+     A global one with ?lang= is that language's own screenshot: same layout, translated mock. */
   :root { --gold: #f5b800; color-scheme: dark; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #000; }
@@ -150,11 +151,29 @@
       goldHeadline: "Type a title.<br>Get an icon.",
       goldSubline: "Notion Icon AI suggests a page icon from the page title. One click sets it.",
     },
+    // Only the global layout's copy so far; the marketing copy of 1 to 5 falls back to English.
+    pt: {
+      title: "Viagem ao Japão",
+      addIcon: "Adicionar ícone",
+      suggestIcon: "Sugerir ícone",
+      addCover: "Adicionar capa",
+      disclaimer: "Não foi criado pela Notion Labs, Inc., nem é afiliado ou endossado por ela.",
+    },
+    es: {
+      title: "Viaje a Japón",
+      addIcon: "Agregar ícono",
+      suggestIcon: "Sugerir ícono",
+      addCover: "Agregar portada",
+      disclaimer: "No fue creado por Notion Labs, Inc., ni está afiliado ni respaldado por ella.",
+    },
   };
   const EMOJIS = ["🇯🇵", "✈️", "🍣"];
 
   const params = new URLSearchParams(location.search);
-  const s = STRINGS[params.get("lang")] ?? STRINGS.en;
+  const s = { ...STRINGS.en, ...STRINGS[params.get("lang")] };
+  // Portuguese and Spanish labels run longer, so the global layout draws their mock a notch
+  // smaller to keep the cover button inside the card.
+  const GLOBAL = s.addIcon === STRINGS.en.addIcon ? { zoom: 2.4, left: 60, top: 56 } : { zoom: 2.2, left: 52, top: 62 };
   document.documentElement.lang = STRINGS[params.get("lang")] ? params.get("lang") : "en";
 
   const SPARK = `<span class="spark"><svg viewBox="-10 -10 20 20">
@@ -185,11 +204,11 @@
   const globalShot = (stage, theme, halo = false) => `<div class="stage global spot ${stage}">
       ${halo ? `<div class="halo"></div>` : ""}
       <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
-      <div class="card ${theme}" style="left:140px;top:150px;width:1000px;height:540px"><div class="mock" style="zoom:2.4">
+      <div class="card ${theme}" style="left:140px;top:150px;width:1000px;height:540px"><div class="mock" style="zoom:${GLOBAL.zoom}">
         ${topbar()}
-        <div class="pg" style="left:60px;top:56px">${controls("open")}<div class="title">${s.title}</div>${bars(300, 100, 86, 58)}</div>
+        <div class="pg" style="left:${GLOBAL.left}px;top:${GLOBAL.top}px">${controls("open")}<div class="title">${s.title}</div>${bars(300, 100, 86, 58)}</div>
       </div></div>
-      <div class="disclaimer">${STRINGS.en.disclaimer}</div>
+      <div class="disclaimer">${s.disclaimer}</div>
     </div>`;
 
   const SHOTS = [
@@ -258,8 +277,8 @@
       ${footer(80)}
     </div>`,
 
-    // 6 to 9: the global layout on calmer backdrops. The mock's labels stay in English, the
-    // extension's fallback language.
+    // 6 to 9: the global layout on calmer backdrops. Without ?lang= the mock's labels stay in
+    // English, the extension's fallback language.
     globalShot("cream onlight", "light"),
     globalShot("tint onlight", "light"),
     globalShot("dark", "dark", true),
@@ -271,7 +290,7 @@
         ${topbar()}
         <div class="pg" style="left:70px;top:60px">${controls("open")}<div class="title">${s.title}</div>${bars(290, 100, 86, 58)}</div>
       </div>
-      <div class="disclaimer">${STRINGS.en.disclaimer}</div>
+      <div class="disclaimer">${s.disclaimer}</div>
       <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
     </div>`,
   ];
@@ -310,6 +329,8 @@
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
     --force-device-scale-factor=1 --window-size=1280,800 \
     --screenshot=store-assets/screenshot-en.png "file://$PWD/playground/screenshot.html?shot=5&lang=en"
+  The global one is ?shot=9 into store-assets/screenshot-global.png; add &lang=pt or &lang=es for
+  store-assets/screenshot-pt.png and store-assets/screenshot-es.png.
   The marquee is the same command with --window-size=1400,560, ?tile=marquee and store-assets/marquee.png.
   The small promo tile is the same command with --window-size=440,280, ?tile=small and store-assets/promo-small.png.
 -->
