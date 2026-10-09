@@ -3,8 +3,10 @@
 <title>Notion Icon AI: store screenshots</title>
 <style>
   /* Concepts for the Chrome Web Store screenshot, each on a fixed 1280x800 stage. 1 to 5 carry
-     localized copy; 6 to 10 are global ones, shown in every language that has no screenshot of its own.
-     With no parameters the page stacks them all for comparison. ?shot=1 to ?shot=10 shows one
+     localized copy; 6 to 14 are global ones, shown in every language that has no screenshot of its own.
+     9 and 11 to 14 are the global set the listing uses, in that order.
+     15 to 18 are in the gold look of 5, one message each; 5 and 15 to 18 are the localized set, in that order.
+     With no parameters the page stacks them all for comparison. ?shot=1 to ?shot=18 shows one
      alone, ready to capture at device scale 1 (see the command at the bottom of this file).
      ?tile=marquee is the marquee promo tile, on its own 1400x560 stage.
      ?tile=small is the small promo tile, the same layout cut down to a 440x280 stage.
@@ -115,6 +117,38 @@
   .global .brand img { width: 52px; height: 52px; }
   .global .disclaimer { left: 0; right: 0; top: 738px; margin: 0; text-align: center; }
 
+  /* 11 to 14: the rest of the global set, in the frame of 9. */
+  .global .grid { left: 140px; top: 150px; width: 1000px; height: 540px; }
+  /* Neighbours side by side carry no shadow: each would fall across the one before it. */
+  .global .tile, .card.half { border: 0; box-shadow: none; }
+  .card.half.dark { border: 1px solid var(--line); }
+  .global .arrow { top: 392px; }
+  .table { position: absolute; left: 20px; top: 56px; width: 200px; }
+  .table .bar { margin: 0 0 18px 8px; }
+  .trow { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 6px; white-space: nowrap; }
+  .trow.hot { background: var(--hover); }
+  .trow .emoji, .trow .doc { flex: none; width: 16px; font-size: 14px; line-height: 16px; text-align: center; }
+  .trow .doc { width: 12px; margin: 0 2px; }
+  .peek { position: absolute; right: 0; top: 0; bottom: 0; width: 330px; background: var(--page);
+    border-left: 1px solid var(--line); box-shadow: -14px 0 40px rgba(15,15,15,.1); }
+  .chevrons { position: absolute; left: 14px; top: 10px; font-size: 15px; line-height: 1; letter-spacing: -2px; color: var(--muted); }
+
+  /* 15 to 18: the localized set. 5's gold field, with the headline centred over the visual. */
+  .stage.sun { background: radial-gradient(circle at 50% 62%, #ffd23d, var(--gold) 60%); color: #191919; }
+  .sun .h b { padding: 0 14px; border-radius: 14px; background: #191919; color: var(--gold); }
+  .sun .sub { color: rgba(25,25,25,.78); }
+  .sun .disclaimer { color: rgba(25,25,25,.6); }
+  /* Small shadows, so side by side cards do not shade each other. */
+  .sun .card, .sun .tile { border: 0; box-shadow: 0 8px 18px rgba(90,55,0,.22); }
+  .sun .card.big { box-shadow: 0 30px 80px rgba(90,55,0,.4); }
+  .sun .arrow, .sun .num { background: #191919; color: var(--gold); }
+  .picker { padding: 14px 16px; height: 100%; -webkit-mask-image: linear-gradient(#000 55%, transparent 96%); }
+  .picker .bar { height: 28px; margin-bottom: 14px; }
+  .picker .cells { display: grid; grid-template-columns: repeat(9, 1fr); gap: 7px 0; font-size: 22px; line-height: 1; text-align: center; }
+  .perks { left: 120px; top: 270px; width: 1040px; height: 300px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+  .perks .tile { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .perks .name { white-space: normal; font-size: 25px; min-height: 2.4em; }
+
   /* Marquee promo tile. Only the brand for text; the card bleeds off the bottom edge. */
   .stage.marquee { width: 1400px; height: 560px; background: radial-gradient(circle at 50% 70%, #ffd23d, var(--gold) 60%); }
   .marquee .brand { left: 0; right: 0; top: 30px; justify-content: center; gap: 12px; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
@@ -150,14 +184,37 @@
       steps: ["Give the page a title", "Click Suggest icon", "Pick your icon"],
       goldHeadline: "Type a title.<br>Get an icon.",
       goldSubline: "Notion Icon AI suggests a page icon from the page title. One click sets it.",
+      pickerHeadline: "Stop scrolling through the <b>emoji picker</b>.",
+      pickerSubline: "Get three icons that fit the page title instead.",
+      perksHeadline: "Install it. <b>That's the whole setup.</b>",
+      perks: [["🆓", "Free"], ["🙅", "No account"], ["⚡", "No settings"], ["🔒", "Only runs on Notion"]],
+      // Titles and icons of the global set. The first is the page the other shots open.
+      globalPages: [["🇯🇵", "Trip to Japan"], ["💍", "Wedding Planning"], ["🎸", "Guitar Practice Log"],
+        ["🎁", "Gift Ideas"], ["🎙️", "Podcast Ideas"], ["🐛", "Bug Tracker"]],
     },
-    // Only the global layout's copy so far; the marketing copy of 1 to 5 falls back to English.
+    // The copy of the global layout and of the localized set (5 and 15 to 18); the headlines
+    // of 1 to 4 fall back to English.
     pt: {
       title: "Viagem ao Japão",
       addIcon: "Adicionar ícone",
       suggestIcon: "Sugerir ícone",
       addCover: "Adicionar capa",
       disclaimer: "Não foi criado pela Notion Labs, Inc., nem é afiliado ou endossado por ela.",
+      gallerySubline: "Sugerido a partir do título da página, em um clique.",
+      stepsHeadline: "Entra o título. <b>Sai o ícone.</b>",
+      steps: ["Dê um título à página", "Clique em Sugerir ícone", "Escolha o seu ícone"],
+      goldHeadline: "Um título.<br>Um clique.<br>Um ícone.",
+      goldSubline: "O Notion Icon AI sugere um ícone a partir do título da página.",
+      // Three short lines: full size, started higher, with the subline pushed down.
+      gold: { size: 84, top: 84, subTop: 366 },
+      pickerHeadline: "Chega de <b>procurar emoji</b>.",
+      pickerSubline: "Receba três ícones que combinam com o título da página.",
+      setGalleryHeadline: "Cada página com o <b>ícone certo</b>.",
+      perksHeadline: "É só instalar. <b>Mais nada.</b>",
+      // 🆓 spells FREE in English, so the translated sets use another emoji.
+      perks: [["🎁", "Grátis"], ["🙅", "Sem conta"], ["⚡", "Sem configuração"], ["🔒", "Só funciona no Notion"]],
+      globalPages: [["🇯🇵", "Viagem ao Japão"], ["💒", "Lista do casamento"], ["🎸", "Aulas de guitarra"],
+        ["🎁", "Ideias de presentes"], ["🎙️", "Ideias de podcast"], ["🐛", "Lista de bugs"]],
     },
     es: {
       title: "Viaje a Japón",
@@ -165,15 +222,36 @@
       suggestIcon: "Sugerir ícono",
       addCover: "Agregar portada",
       disclaimer: "No fue creado por Notion Labs, Inc., ni está afiliado ni respaldado por ella.",
+      gallerySubline: "Sugerido a partir del título de la página, en un clic.",
+      stepsHeadline: "Entra el título. <b>Sale el ícono.</b>",
+      steps: ["Ponle título a la página", "Haz clic en Sugerir ícono", "Elige tu ícono"],
+      goldHeadline: "Un título.<br>Un clic.<br>Un ícono.",
+      goldSubline: "Notion Icon AI sugiere un ícono a partir del título de la página.",
+      gold: { size: 84, top: 84, subTop: 366 },
+      pickerHeadline: "Deja de <b>buscar emojis</b>.",
+      pickerSubline: "Recibe tres íconos que combinan con el título de la página.",
+      setGalleryHeadline: "Cada página con el <b>ícono ideal</b>.",
+      perksHeadline: "Instálala y listo. <b>Nada más.</b>",
+      perks: [["🎁", "Gratis"], ["🙅", "Sin cuenta"], ["⚡", "Sin configuración"], ["🔒", "Solo funciona en Notion"]],
+      globalPages: [["🇯🇵", "Viaje a Japón"], ["💒", "Planes de boda"], ["🎸", "Clases de guitarra"],
+        ["🎁", "Ideas de regalos"], ["🎙️", "Ideas de podcast"], ["🐛", "Lista de bugs"]],
     },
   };
   const EMOJIS = ["🇯🇵", "✈️", "🍣"];
+  // The start of Notion's emoji picker, for the mock of it.
+  const PICKER = ("😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 😚 😙 🥲 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 "
+    + "😏 😒 🙄 😬 🤥 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕 😟 🙁 😮 😯 😲 😳 🥺 😦 "
+    + "😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬").split(" ");
 
   const params = new URLSearchParams(location.search);
   const s = { ...STRINGS.en, ...STRINGS[params.get("lang")] };
-  // Portuguese and Spanish labels run longer, so the global layout draws their mock a notch
-  // smaller to keep the cover button inside the card.
-  const GLOBAL = s.addIcon === STRINGS.en.addIcon ? { zoom: 2.4, left: 60, top: 56 } : { zoom: 2.2, left: 52, top: 62 };
+  // Portuguese and Spanish labels and titles run longer, so each layout draws their mock a notch
+  // smaller: the cover button stays inside the global card, and the popover inside the others.
+  const WIDE = s.addIcon !== STRINGS.en.addIcon;
+  const GLOBAL = WIDE ? { zoom: 2.2, left: 52, top: 62 } : { zoom: 2.4, left: 60, top: 56 };
+  const HALF = WIDE ? { zoom: 1.3, left: 24, bars: 300 } : { zoom: 1.5, left: 28, bars: 257 };
+  const STEP = WIDE ? { zoom: 1.05, left: 14, top: 98, iconTop: 34, bars: 300 } : { zoom: 1.3, left: 16, top: 70, iconTop: 16, bars: 240 };
+  const GOLD = { ...(WIDE ? { zoom: 2, left: 30, size: 66, top: 176 } : { zoom: 2.2, left: 36, size: 84, top: 150 }), subTop: 348, ...s.gold };
   document.documentElement.lang = STRINGS[params.get("lang")] ? params.get("lang") : "en";
 
   const SPARK = `<span class="spark"><svg viewBox="-10 -10 20 20">
@@ -200,15 +278,55 @@
       <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
       <div class="disclaimer">${s.disclaimer}</div></div>`;
 
-  // Brand on top, one large page card, disclaimer below, and no marketing copy.
-  const globalShot = (stage, theme, halo = false) => `<div class="stage global spot ${stage}">
+  // The global frame: brand on top, disclaimer below, and no marketing copy. `inner` fills the
+  // 1000x540 area between them, which starts at 140,150.
+  const globalFrame = (inner, stage = "dark", halo = true) => `<div class="stage global spot ${stage}">
       ${halo ? `<div class="halo"></div>` : ""}
       <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
-      <div class="card ${theme}" style="left:140px;top:150px;width:1000px;height:540px"><div class="mock" style="zoom:${GLOBAL.zoom}">
+      ${inner}
+      <div class="disclaimer">${s.disclaimer}</div>
+    </div>`;
+  // One large page card in the frame.
+  const globalShot = (stage, theme, halo = false) => globalFrame(
+    `<div class="card ${theme}" style="left:140px;top:150px;width:1000px;height:540px"><div class="mock" style="zoom:${GLOBAL.zoom}">
         ${topbar()}
         <div class="pg" style="left:${GLOBAL.left}px;top:${GLOBAL.top}px">${controls("open")}<div class="title">${s.title}</div>${bars(300, 100, 86, 58)}</div>
+      </div></div>`, stage, halo);
+  // Half of a two-card shot: a page at `left` in `theme`, with `content` above its title. `top`
+  // is the content's offset at the English zoom.
+  const halfCard = (left, theme, top, content, cardTop = 150, height = 540) =>
+    `<div class="card half ${theme}" style="left:${left}px;top:${cardTop}px;width:470px;height:${height}px"><div class="mock" style="zoom:${HALF.zoom}">
+        <div class="pg" style="left:${HALF.left}px;top:${top * 1.5 / HALF.zoom}px">${content}<div class="title">${s.title}</div>${bars(HALF.bars, 100, 84, 93, 62)}</div>
+      </div></div>`;
+  // A database with one row open in side peek, in a card of the given box.
+  const peekCard = (left, top, width, height, zoom) =>
+    `<div class="card big light" style="left:${left}px;top:${top}px;width:${width}px;height:${height}px"><div class="mock" style="zoom:${zoom};height:${height / zoom}px">
+        <div class="topbar"><span class="doc"></span><div class="bar" style="width:96px"></div></div>
+        <div class="table"><div class="bar" style="width:110px;height:16px"></div>
+          ${[1, 2, 0, 3, 4, 5].map((i) => s.globalPages[i]).map(([emoji, name], i) => `<div class="trow ${i === 2 ? "hot" : ""}">
+            ${i === 2 ? `<span class="doc"></span>` : `<span class="emoji">${emoji}</span>`}${name}</div>`).join("")}</div>
+        <div class="peek"><div class="chevrons">»</div>
+          <div class="pg" style="left:28px;top:62px">${controls("open", false)}<div class="title">${s.title}</div>${bars(274, 100, 86, 93, 58)}</div>
+        </div>
+      </div></div>`;
+  // The flow as three cards with a numbered caption each.
+  const steps = (theme, top) => `
+      <div class="card ${theme}" style="left:60px;top:${top}px;width:373px;height:400px"><div class="mock" style="zoom:${STEP.zoom}">
+        <div class="pg" style="left:${STEP.left}px;top:${STEP.top}px">${controls("idle", false)}<div class="title">${s.title}<span class="caret"></span></div>${bars(STEP.bars, 100, 84, 93, 70, 45)}</div>
       </div></div>
-      <div class="disclaimer">${s.disclaimer}</div>
+      <div class="card ${theme}" style="left:453px;top:${top}px;width:373px;height:400px"><div class="mock" style="zoom:${STEP.zoom}">
+        <div class="pg" style="left:${STEP.left}px;top:${STEP.top}px">${controls("open", false)}<div class="title">${s.title}</div>${bars(STEP.bars, 100, 84, 93, 70, 45)}</div>
+      </div></div>
+      <div class="card ${theme}" style="left:846px;top:${top}px;width:373px;height:400px"><div class="mock" style="zoom:${STEP.zoom}">
+        <div class="pg" style="left:${STEP.left}px;top:${STEP.iconTop}px"><div class="slot emoji">${EMOJIS[0]}</div><div class="title">${s.title}</div>${bars(STEP.bars, 100, 84, 93, 70, 45)}</div>
+      </div></div>
+      ${s.steps.map((text, i) => `<div class="step" style="left:${60 + i * 393}px;top:${top + 432}px"><span class="num">${i + 1}</span>${text}</div>`).join("")}`;
+  // A localized shot: headline, optional subline, the visual, and the footer.
+  const sunShot = (headline, subline, inner, size = 58) => `<div class="stage sun spot">
+      <h1 class="h" style="top:${subline ? 50 : 76}px;font-size:${size}px">${headline}</h1>
+      ${subline ? `<div class="sub" style="top:128px">${subline}</div>` : ""}
+      ${inner}
+      ${footer()}
     </div>`;
 
   const SHOTS = [
@@ -253,26 +371,17 @@
     `<div class="stage dark">
       <div class="halo"></div>
       <h1 class="h" style="top:52px">${s.stepsHeadline}</h1>
-      <div class="card" style="left:60px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
-        <div class="pg" style="left:16px;top:70px">${controls("idle", false)}<div class="title">${s.title}<span class="caret"></span></div>${bars(240, 100, 84, 93, 70, 45)}</div>
-      </div></div>
-      <div class="card" style="left:453px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
-        <div class="pg" style="left:16px;top:70px">${controls("open", false)}<div class="title">${s.title}</div>${bars(240, 100, 84, 93, 70, 45)}</div>
-      </div></div>
-      <div class="card" style="left:846px;top:164px;width:373px;height:400px"><div class="mock" style="zoom:1.3">
-        <div class="pg" style="left:16px;top:16px"><div class="slot emoji">${EMOJIS[0]}</div><div class="title">${s.title}</div>${bars(240, 100, 84, 93, 70, 45)}</div>
-      </div></div>
-      ${s.steps.map((text, i) => `<div class="step" style="left:${60 + i * 393}px"><span class="num">${i + 1}</span>${text}</div>`).join("")}
+      ${steps("", 164)}
       ${footer(60)}
     </div>`,
 
     // 5: gold field, Notion in light mode, text beside the mock.
     `<div class="stage gold spot">
-      <h1 class="h">${s.goldHeadline}</h1>
-      <div class="sub">${s.goldSubline}</div>
-      <div class="card light" style="left:580px;top:120px;width:760px;height:560px"><div class="mock" style="zoom:2.2">
+      <h1 class="h" style="top:${GOLD.top}px;font-size:${GOLD.size}px">${s.goldHeadline}</h1>
+      <div class="sub" style="top:${GOLD.subTop}px">${s.goldSubline}</div>
+      <div class="card light" style="left:580px;top:120px;width:760px;height:560px"><div class="mock" style="zoom:${GOLD.zoom}">
         ${topbar()}
-        <div class="pg" style="left:36px;top:54px">${controls("open")}<div class="title">${s.title}</div>${bars(280, 100, 86, 93, 58)}</div>
+        <div class="pg" style="left:${GOLD.left}px;top:54px">${controls("open")}<div class="title">${s.title}</div>${bars(280, 100, 86, 93, 58)}</div>
       </div></div>
       ${footer(80)}
     </div>`,
@@ -293,6 +402,40 @@
       <div class="disclaimer">${s.disclaimer}</div>
       <div class="brand"><img src="../extension/icons/icon512.png" alt="">Notion Icon AI</div>
     </div>`,
+
+    // 11: global, the same page before and after.
+    globalFrame(`${halfCard(140, "light", 104, controls("hover", false))}
+      ${halfCard(670, "light", 50, `<div class="slot emoji">${EMOJIS[0]}</div>`)}
+      <div class="arrow">→</div>`),
+
+    // 12: global, many pages, each with the icon its title earned.
+    globalFrame(`<div class="grid">${s.globalPages.map(([emoji, name]) => `<div class="tile light">
+        <div class="emoji">${emoji}</div><div class="name">${name}</div>${bars(264, 100, 78, 52)}</div>`).join("")}</div>`),
+
+    // 13: global, a database row open in side peek.
+    globalFrame(peekCard(140, 150, 1000, 540, 1.8)),
+
+    // 14: global, Notion's light and dark themes side by side.
+    globalFrame(`${halfCard(140, "light", 104, controls("open", false))}${halfCard(670, "dark", 104, controls("open", false))}`),
+
+    // 15: the emoji picker it replaces, beside the three suggestions.
+    sunShot(s.pickerHeadline, s.pickerSubline, `
+      <div class="card light" style="left:140px;top:206px;width:470px;height:480px"><div class="mock" style="zoom:1.5;height:320px">
+        <div class="picker"><div class="bar"></div><div class="cells emoji">${PICKER.map((e) => `<span>${e}</span>`).join("")}</div></div>
+      </div></div>
+      ${halfCard(670, "light", 84, controls("open", false), 206, 480)}
+      <div class="arrow" style="top:418px">→</div>`, 54),
+
+    // 16: the flow as three steps.
+    sunShot(s.stepsHeadline, "", steps("light", 190)),
+
+    // 17: many pages, each with the icon its title earned.
+    sunShot(s.setGalleryHeadline ?? s.galleryHeadline, s.gallerySubline, `<div class="grid">${s.globalPages.map(([emoji, name]) => `<div class="tile light">
+        <div class="emoji">${emoji}</div><div class="name">${name}</div>${bars(277, 100, 78, 52)}</div>`).join("")}</div>`),
+
+    // 18: what it does not ask of you.
+    sunShot(s.perksHeadline, "", `<div class="grid perks">${s.perks.map(([emoji, name]) => `<div class="tile light">
+        <div class="emoji">${emoji}</div><div class="name">${name}</div></div>`).join("")}</div>`),
   ];
 
   // Promo tiles, picked by name with ?tile= so renumbering the shots cannot move them.
@@ -314,7 +457,9 @@
   };
 
   const NAMES = ["Hero", "Before / after", "Gallery", "Three steps", "Gold field", "Global: off-white",
-    "Global: pale gold", "Global: dark, dark card", "Global: dark, light card", "Global: full frame"];
+    "Global: pale gold", "Global: dark, dark card", "Global: dark, light card", "Global: full frame",
+    "Global: before / after", "Global: gallery", "Global: side peek", "Global: light and dark",
+    "Set: emoji picker", "Set: three steps", "Set: gallery", "Set: nothing to set up"];
 
   const shot = TILES[params.get("tile")] ?? SHOTS[params.get("shot") - 1];
   addEventListener("DOMContentLoaded", () => {
@@ -328,9 +473,11 @@
 <!-- Capture one concept at exactly 1280x800 (a plain Retina screenshot would be 2560x1600):
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
     --force-device-scale-factor=1 --window-size=1280,800 \
-    --screenshot=store-assets/screenshot-en.png "file://$PWD/playground/screenshot.html?shot=5&lang=en"
-  The global one is ?shot=9 into store-assets/screenshot-global.png; add &lang=pt or &lang=es for
-  store-assets/screenshot-pt.png and store-assets/screenshot-es.png.
+    --screenshot=store-assets/en/screenshot-1.png "file://$PWD/playground/screenshot.html?shot=5&lang=en"
+  Screenshots sit in one folder per language under store-assets/, named screenshot-1.png to screenshot-5.png.
+  The localized set is ?shot=5, 15, 16, 17 and 18, with &lang=en, pt or es, into en/, pt/ and es/.
+  The global set is ?shot=9, 11, 12, 13 and 14 with no &lang=, into global/.
+  ?shot=9 with &lang=pt or &lang=es makes pt/screenshot-global.png and es/screenshot-global.png.
   The marquee is the same command with --window-size=1400,560, ?tile=marquee and store-assets/marquee.png.
   The small promo tile is the same command with --window-size=440,280, ?tile=small and store-assets/promo-small.png.
 -->

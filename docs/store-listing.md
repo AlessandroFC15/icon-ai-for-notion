@@ -25,9 +25,12 @@ Suggests a page icon from the page title.
 ### Description (English)
 
 ```
-Notion Icon AI suggests an icon for your Notion page from its title.
+Stop scrolling through the emoji picker. Notion Icon AI picks an icon for your Notion page from its title.
 
-On any page without an icon, click "Suggest icon" above the title and pick one of three emojis. Works with Notion in any language.
+✨ Click "Suggest icon" on any page without an icon
+🎯 Get 3 emoji suggestions that match the title
+👆 Pick one and it becomes the page icon
+🌍 Works with Notion in any language
 
 Not made by, affiliated with, or endorsed by Notion Labs, Inc.
 ```
@@ -35,9 +38,12 @@ Not made by, affiliated with, or endorsed by Notion Labs, Inc.
 ### Description (Portuguese)
 
 ```
-O Notion Icon AI sugere um ícone para a sua página do Notion a partir do título.
+Chega de procurar emoji. O Notion Icon AI escolhe um ícone para a sua página do Notion a partir do título.
 
-Em qualquer página sem ícone, clique em "Sugerir ícone" acima do título e escolha um dos três emojis. Funciona com o Notion em qualquer idioma.
+✨ Clique em "Sugerir ícone" em qualquer página sem ícone
+🎯 Receba 3 sugestões de emoji que combinam com o título
+👆 Escolha uma e ela vira o ícone da página
+🌍 Funciona com o Notion em qualquer idioma
 
 Não é feito, afiliado nem endossado pela Notion Labs, Inc.
 ```
@@ -45,9 +51,12 @@ Não é feito, afiliado nem endossado pela Notion Labs, Inc.
 ### Description (Spanish)
 
 ```
-Notion Icon AI sugiere un ícono para tu página de Notion a partir del título.
+Deja de buscar emojis. Notion Icon AI elige un ícono para tu página de Notion a partir del título.
 
-En cualquier página sin ícono, haz clic en "Sugerir ícono" encima del título y elige uno de los tres emojis. Funciona con Notion en cualquier idioma.
+✨ Haz clic en "Sugerir ícono" en cualquier página sin ícono
+🎯 Recibe 3 sugerencias de emoji que encajan con el título
+👆 Elige una y se convierte en el ícono de la página
+🌍 Funciona con Notion en cualquier idioma
 
 No está hecha, afiliada ni respaldada por Notion Labs, Inc.
 ```
@@ -73,7 +82,7 @@ The package ships `en`, `pt_BR`, `pt_PT` and `es` locales, so the dashboard shou
 | Asset | Size | Status |
 |---|---|---|
 | Store icon | 128x128 PNG | Exists: `extension/icons/icon128.png`. Check the artwork is about 96x96 with transparent padding. |
-| Screenshots | 1280x800 or 640x400, 1 to 5 | Missing |
+| Screenshots | 1280x800 or 640x400, 1 to 5 | Exist: five per listing in `store-assets/en/`, `pt/` and `es/`, and `global/` for every other language, from `playground/screenshot.html`. |
 | Small promo tile | 440x280 | Exists: `store-assets/promo-small.png`, from `playground/screenshot.html?tile=small`. |
 | Marquee promo tile | 1400x560 | Exists: `store-assets/marquee.png`, from `playground/screenshot.html?tile=marquee`. |
 | Promo video | YouTube URL | Missing, optional |

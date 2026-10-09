@@ -19,7 +19,7 @@ Not made by, affiliated with, or endorsed by Notion Labs, Inc.
 | `backend/` | The Cloudflare Worker. See [`backend/README.md`](backend/README.md). |
 | `data/` | A snapshot of the emojis in Notion's picker, which the backend's catalog is built from. |
 | `docs/` | Analytics events, the Web Store listing, and the write-ups of the two spikes. |
-| `store-assets/` | Screenshots and promo tiles for the Web Store. |
+| `store-assets/` | Screenshots and promo tiles for the Web Store. Screenshots sit in one folder per language, plus `global/` for every other language. |
 | `playground/` | Standalone pages for design work. `screenshot.html` draws the store assets. |
 | `spike/` | The scripts behind the first spike on suggestion quality. |
 
